@@ -18,15 +18,25 @@ CLEAN=$(BLUE)[CLEAN]$(RESET)
 all: clean link
 	@printf "$(INFO) Copying grub.cfg, linking grub code, and building ISO with grub-mkrescue...\n"
 	cp src/grub.cfg build/isofiles/boot/grub
-	grub-mkrescue -o build/os.iso build/isofiles
+	make build_iso
 
-run: all
+build_iso:
+	grub-mkrescue -o build/os.iso build/isofiles
 	@printf "$(INFO) Running OS...\n"
-	qemu-system-x86_64 -cdrom build/os.iso
+	qemu-system-x86_64 -s -cdrom build/os.iso
+
+build_fat_img:
+	fish --init-command='set fish_trace on' createfat32img.fish
+	@printf "$(INFO) Running OS...\n"
+	qemu-system-x86_64 -s -drive format=raw,file=build/fat32.img -serial stdio
 
 link: boot
 	@printf "$(LINK) Linking into kernel.bin...\n"
-	ld --nmagic --output build/isofiles/boot/kernel.bin --script src/linker.ld build/multiboot_header.o build/boot.o build/longboot.o
+	$(MAKE) -C c_src all
+	ld --nmagic -nostdlib \
+		--output build/isofiles/boot/kernel.bin \
+		--script src/linker.ld \
+		build/multiboot_header.o build/boot.o build/longboot.o ./c_src/src/kernel_main.o
 	@#printf "$(INFO) Section headers:\n"
 	@#objdump -h kernel.bin
 

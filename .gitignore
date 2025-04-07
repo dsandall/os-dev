@@ -1,5 +1,8 @@
 unpackDevEnv
 **.img
+**.iso
+**.bin
+**.o
 
 
 # Prerequisites
