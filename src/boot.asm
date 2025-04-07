@@ -1,8 +1,7 @@
 ; https://os.phil-opp.com/entering-longmode/
-;
-;
 
 global start
+extern long_mode_start
 
 section .text
 bits 32
@@ -10,18 +9,23 @@ start:
   ; initialize stack pointer reg (esp)
   mov esp, stack_top
 
+  ; verify platform
   call check_multiboot
   call check_cpuid
   call check_long_mode
 
+  ; set up page tables and hugepages, set appropriate cpu registers
   call set_up_page_tables
   call enable_paging
+
+  ; https://os.phil-opp.com/entering-longmode/#loading-the-gdt
+  ; load the 64-bit GDT and test 64 bit code execution
+  lgdt [gdt64.pointer]
+  jmp gdt64.code:long_mode_start
  
   ; print 'OK' to screen
   mov dword [0xb8000], 0x2f4b2f4f
   hlt
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Prints `ERR: ` and the given error code to screen and hangs.
@@ -43,7 +47,7 @@ error:
   .no_multiboot:
     mov al, "0"
     jmp error
-  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;https://os.phil-opp.com/entering-longmode/#cpuid-check
   check_cpuid:
@@ -114,7 +118,7 @@ set_up_page_tables:
     or eax, 0b11 ; present + writable
     mov [p3_table], eax
 
-;;;;;; Inner Loop: map each P2 entry to a huge 2MiB page
+;;; Inner Loop: map each P2 entry to a huge 2MiB page
     mov ecx, 0         ; counter variable
 .map_p2_table:
     ; map ecx-th P2 entry to a huge page that starts at address 2MiB*ecx
@@ -128,7 +132,6 @@ set_up_page_tables:
     jne .map_p2_table  ; else map the next entry
 
     ret
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; https://os.phil-opp.com/entering-longmode/#enable-paging
@@ -155,6 +158,7 @@ enable_paging:
     mov cr0, eax
 
     ret
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; reserve bytes for stack_bottom (allocates space for stack)
 ;               and page table (required for long mode)
@@ -172,5 +176,15 @@ stack_bottom:
     resb 64
 stack_top:
 
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; https://os.phil-opp.com/entering-longmode/#the-global-descriptor-table
+; https://os.phil-opp.com/entering-longmode/#loading-the-gdt
+; create new 64 bit GDT, so that we can switch to 64 bit mode (instead of long mode, with 32b compatibility mode)
+section .rodata
+gdt64:
+    dq 0 ; zero entry
+.code: equ $ - gdt64 ; new
+    dq (1<<43) | (1<<44) | (1<<47) | (1<<53) ; code segment
+.pointer:
+    dw $ - gdt64 - 1
+    dq gdt64

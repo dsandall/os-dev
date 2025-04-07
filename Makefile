@@ -15,7 +15,7 @@ LINK=$(GREEN)[LINK]$(RESET)
 CLEAN=$(BLUE)[CLEAN]$(RESET)
 
 # Default target
-all: clean build_dir link
+all: clean link
 	@printf "$(INFO) Copying grub.cfg, linking grub code, and building ISO with grub-mkrescue...\n"
 	cp src/grub.cfg build/isofiles/boot/grub
 	grub-mkrescue -o build/os.iso build/isofiles
@@ -24,24 +24,19 @@ run: all
 	@printf "$(INFO) Running OS...\n"
 	qemu-system-x86_64 -cdrom build/os.iso
 
-build_dir:
-	mkdir --parents build/isofiles/boot/grub
-
-link: multiboot_header boot
+link: boot
 	@printf "$(LINK) Linking into kernel.bin...\n"
-	ld --nmagic --output build/isofiles/boot/kernel.bin --script src/linker.ld build/multiboot_header.o build/boot.o
+	ld --nmagic --output build/isofiles/boot/kernel.bin --script src/linker.ld build/multiboot_header.o build/boot.o build/longboot.o
 	@#printf "$(INFO) Section headers:\n"
 	@#objdump -h kernel.bin
 
-multiboot_header: src/multiboot_header.asm
+boot: src/boot.asm src/longboot.asm src/multiboot_header.asm
 	@printf "$(BUILD) Assembling multiboot header...\n"
-	nasm -f elf64 -o build/multiboot_header.o src/multiboot_header.asm
-	@# nasm multiboot_header.asm
-	@# hexdump -x multiboot_header
-
-boot: src/boot.asm
 	@printf "$(BUILD) Assembling bootcode called by grub...\n"
+	@printf "$(BUILD) Assembling longmode boot code called by 32b bootcode...\n"
+	nasm -f elf64 -o build/multiboot_header.o src/multiboot_header.asm
 	nasm -f elf64 -o build/boot.o src/boot.asm
+	nasm -f elf64 -o build/longboot.o src/longboot.asm
 	@# nasm boot.asm
 	@# hexdump -x boot
 	@# ndisasm -b 32 boot
@@ -49,6 +44,4 @@ boot: src/boot.asm
 clean:
 	@printf "$(CLEAN) Removing build files...\n"
 	rm -fr build
-
-.PHONY: all clean
-
+	mkdir --parents build/isofiles/boot/grub
