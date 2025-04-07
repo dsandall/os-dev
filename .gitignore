@@ -1,4 +1,6 @@
 unpackDevEnv
+**.img
+
 
 # Prerequisites
 *.d
