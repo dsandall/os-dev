@@ -21,7 +21,7 @@ sudo losetup $second foo.img -o 1048576
 
 # make filesystem
 sudo mkdosfs -F32 -f 2 $second
-sudo mkdir -f /mnt/osfiles
+sudo mkdir /mnt/osfiles
 sudo mount $second /mnt/osfiles
 
 # copy seed files from build
