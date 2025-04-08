@@ -18,7 +18,7 @@ CLEAN=$(BLUE)[CLEAN]$(RESET)
 all: clean link
 	@printf "$(INFO) Copying grub.cfg, linking grub code, and building ISO with grub-mkrescue...\n"
 	cp src/grub.cfg build/isofiles/boot/grub
-	make build_iso
+	make build_fat_img
 
 build_iso:
 	grub-mkrescue -o build/os.iso build/isofiles
