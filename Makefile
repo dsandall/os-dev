@@ -20,15 +20,15 @@ all: clean link
 	cp src/grub.cfg build/isofiles/boot/grub
 	make build_fat_img
 
-build_iso:
-	grub-mkrescue -o build/os.iso build/isofiles
-	@printf "$(INFO) Running OS...\n"
-	qemu-system-x86_64 -s -cdrom build/os.iso
+#build_iso:
+#	grub-mkrescue -o build/os.iso build/isofiles
+#	@printf "$(INFO) Running OS...\n"
+#	qemu-system-x86_64 -s -cdrom build/os.iso
 
 build_fat_img:
 	fish --init-command='set fish_trace on' createfat32img.fish
 	@printf "$(INFO) Running OS...\n"
-	qemu-system-x86_64 -s -drive format=raw,file=build/fat32.img -serial stdio
+	qemu-system-x86_64 -S -s -drive format=raw,file=build/fat32.img -serial stdio
 
 link: boot
 	@printf "$(LINK) Linking into kernel.bin...\n"
@@ -36,7 +36,7 @@ link: boot
 	ld --nmagic -nostdlib \
 		--output build/isofiles/boot/kernel.bin \
 		--script src/linker.ld \
-		build/multiboot_header.o build/boot.o build/longboot.o ./c_src/src/kernel_main.o
+		build/multiboot_header.o build/boot.o build/longboot.o ./c_src/src/kernel_main.o ./c_src/src/sealib.o ./c_src/src/vgalib.o
 	@#printf "$(INFO) Section headers:\n"
 	@#objdump -h kernel.bin
 

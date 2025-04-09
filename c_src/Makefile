@@ -1,15 +1,28 @@
+
 # compile and link flags from https://wiki.osdev.org/Why_do_I_need_a_Cross_Compiler%3F
-CFLAGS = -Wall -Wextra -g -ffreestanding -mno-red-zone -fno-exceptions -fno-rtti
+CFLAGS = -Wall -Wextra -g -ffreestanding -mno-red-zone -fno-exceptions #-fno-rtti
 LFLAGS = -nostdlib -lgcc
 
-SRCS = src/kernel_main.c
-OBJS = $(SRCS:.c=.o)
+# List all source files here
+#SRCS = src/kernel_main.c src/sealib.c src/vgalib.c
+#OBJS = $(SRCS:.c=.o)
 
-all: clean src/kernel_main.o
+# Name of the output binary
+# OUTPUT = kernel_packed.o
 
-%.o: %.c
-	gcc $(CFLAGS) -c $< -o $@
+all: 
+# Rule to compile .c files into .o files
+	gcc $(CFLAGS) -c src/sealib.c -o src/sealib.o
+	gcc $(CFLAGS) -c src/vgalib.c -o src/vgalib.o
+	gcc $(CFLAGS) -c src/kernel_main.c -o src/kernel_main.o
 
+## Rule to create the final binary by linking the object files
+#$(OUTPUT): $(OBJS)
+#	gcc $(LFLAGS) $(OBJS) -o $(OUTPUT)
+#
+#	ar rcs  
+
+# Clean up the build directory and object files
 clean:
-	rm -rf build
+	rm -rf build $(OBJS) $(OUTPUT)
 
