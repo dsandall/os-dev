@@ -18,7 +18,23 @@
 #define VGA_WHITE 0x0F
 
 #include "freestanding.h"
-void Text_write_in(char c);
+
+typedef struct {
+  uint8_t character : 8; // 8 bits for the character
+  uint8_t fg_color : 4;  // 4 bits for foreground color (0-15)
+  uint8_t bg_color : 4;  // 4 bits for background color (0-15)
+} __attribute__((packed)) vga_char_t;
+
+typedef struct {
+  int x;
+  int y;
+} position_t;
+
+// globalz
+extern position_t VGA_cursor;
+extern uint8_t vga_bg_default;
+extern uint8_t vga_fg_default;
+
 void VGA_display_char(char c, uint8_t fg, uint8_t bg);
-void VGA_setpos(int x, int y);
+// void VGA_setpos(int x, int y); // global instead
 void VGA_clear(void);
