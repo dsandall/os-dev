@@ -13,10 +13,10 @@ LFLAGS = -nostdlib -lgcc
 
 all: 
 # Rule to compile .c files into .o files
+	gcc $(CFLAGS) -c src/printlib.c -o src/printlib.o
 	gcc $(CFLAGS) -c src/sealib.c -o src/sealib.o
 	gcc $(CFLAGS) -c src/vgalib.c -o src/vgalib.o
 	gcc $(CFLAGS) -c src/kernel_main.c -o src/kernel_main.o
-	gcc $(CFLAGS) -c src/printlib.c -o src/printlib.o
 
 ## Rule to create the final binary by linking the object files
 #$(OUTPUT): $(OBJS)

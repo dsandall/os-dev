@@ -1,45 +1,42 @@
 #include "printlib.h"
 #include "vgalib.h"
-#include <stdbool.h>
-#include <stdint.h>
 
-// typedef struct {
-//   int x;
-//   int y;
-//   int height;
-//   int width;
-// } Window_t;
-//
-// void Textbox_init() {}
+Textbox_t *currentTextbox;
 
-// TODO: complete line (and block) wrapping logic
+void set_Textbox(Textbox_t *box) {
+  // user provides the struct that retains cursor and textbox details
+  currentTextbox = box;
+}
+
 void print_char(char c) {
+  Textbox_t *box = currentTextbox;
+  position_t *tc = &currentTextbox->cursor;
+
   switch (c) {
   case '\n':
-    VGA_cursor.x = 0;
-    VGA_cursor.y++;
+    tc->x = box->x_corner;
+    tc->y++;
     break;
   case '\r':
-    VGA_cursor.x = 0;
+    tc->x = box->x_corner;
     break;
   default:
 
+    VGA_cursor = *tc;
     VGA_display_char(c, 0, 0);
 
-    VGA_cursor.x++;
-    if (VGA_cursor.x >= VGA_WIDTH) {
-      VGA_cursor.x = 0;
-      VGA_cursor.y++;
+    tc->x++;
+  }
 
-      if (VGA_cursor.x >= VGA_HEIGHT) {
-        VGA_cursor.y = 0;
-      }
-    }
+  // check bounds after updating text cursor position
+  if (tc->x >= (box->width + box->x_corner)) {
+    tc->x = 0;
+    tc->y++;
+  }
+  if (tc->y >= (box->height + box->y_corner)) {
+    tc->y = 0;
   }
 }
-
-enum format { Signed, Unsigned, Hex };
-enum size { Short, Int, Long };
 
 void print_str(const char *str) {
   while (*str != '\0') {
@@ -152,18 +149,16 @@ int printk(const char *fmt, ...) {
       // Shorts
       case 'h':
         n = (va_arg(va, int32_t));
+        // short is promoted to int when used as variadic arg
         is_neg = (((int16_t)n) < 0) ? true : false;
         c = *fmt++;
         goto prant;
 
       // "Ints"
       case 'd':
-        n = va_arg(va, int32_t);
-        is_neg = (((int32_t)n) < 0) ? true : false;
-        goto prant;
       case 'u':
       case 'x':
-        n = va_arg(va, uint32_t);
+        n = va_arg(va, int32_t);
         is_neg = (((int32_t)n) < 0) ? true : false;
         goto prant;
 
@@ -200,13 +195,12 @@ void VGA_printTest(void) {
   VGA_cursor.x = 0;
   VGA_cursor.y = 0;
 
-  printk("%c\n", 'a');           // should be "a"
-  printk("%c\n", 'Q');           // should be "Q"
-  printk("%c\n", 256 + '9');     // Should be "9"
-  printk("%s\n", "test string"); // "test string"
-  printk("foo%sbar\n", "blah");  // "fooblahbar"
-  // WARN: not sure exactly what the spec is here, but thats fine
-  // printk("foo%%sbar");               // "foo%bar"
+  printk("%c\n", 'a');                 // should be "a"
+  printk("%c\n", 'Q');                 // should be "Q"
+  printk("%c\n", 256 + '9');           // Should be "9"
+  printk("%s\n", "test string");       // "test string"
+  printk("foo%sbar\n", "blah");        // "fooblahbar"
+  printk("foo%%sbar\n");               // "foo%bar"
   printk("%d\n", INT_MIN);             // "-2147483648"
   printk("%d\n", INT_MAX);             // "2147483647"
   printk("%u\n", 0);                   // "0"
@@ -222,4 +216,6 @@ void VGA_printTest(void) {
   printk("%qd\n", LONG_MIN);           // "-9223372036854775808"
   printk("%qd\n", LONG_MAX);           // "9223372036854775807"
   printk("%qu\n", ULONG_MAX);          // "18446744073709551615"
+
+  VGA_clear();
 }

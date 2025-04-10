@@ -34,9 +34,3 @@ void VGA_clear(void) {
     }
   }
 };
-
-/*
-// TODO:
-void VGA_display_str(const char *str) {
-};
-*/

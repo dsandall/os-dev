@@ -25,11 +25,6 @@ typedef struct {
   uint8_t bg_color : 4;  // 4 bits for background color (0-15)
 } __attribute__((packed)) vga_char_t;
 
-typedef struct {
-  int x;
-  int y;
-} position_t;
-
 // globalz
 extern position_t VGA_cursor;
 extern uint8_t vga_bg_default;
