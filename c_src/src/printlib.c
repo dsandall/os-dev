@@ -1,5 +1,6 @@
 #include "printlib.h"
 #include "vgalib.h"
+#include <stdint.h>
 
 Textbox_t *currentTextbox;
 
@@ -8,9 +9,31 @@ void set_Textbox(Textbox_t *box) {
   currentTextbox = box;
 }
 
+void clear_Textbox(void) {
+
+  Textbox_t *box = currentTextbox;
+
+  for (int x = box->x_corner; x < (box->width + box->x_corner); x++) {
+    VGA_cursor.x = x;
+    for (int y = box->y_corner; y < (box->height + box->y_corner); y++) {
+      VGA_cursor.y = y;
+      VGA_display_char(' ', VGA_DEFAULT, VGA_DEFAULT);
+    }
+  }
+
+  box->cursor.x = box->x_corner;
+  box->cursor.y = box->y_corner;
+};
+
 void print_char(char c) {
   Textbox_t *box = currentTextbox;
   position_t *tc = &currentTextbox->cursor;
+
+  // Wrapping Logic
+  if (tc->y >= (box->height + box->y_corner)) {
+    tc->y = box->y_corner;
+    clear_Textbox();
+  }
 
   switch (c) {
   case '\n':
@@ -23,18 +46,16 @@ void print_char(char c) {
   default:
 
     VGA_cursor = *tc;
-    VGA_display_char(c, 0, 0);
+    VGA_display_char(c, VGA_DEFAULT, VGA_DEFAULT);
 
     tc->x++;
   }
 
+  // Wrapping Logic
   // check bounds after updating text cursor position
   if (tc->x >= (box->width + box->x_corner)) {
-    tc->x = 0;
+    tc->x = box->x_corner;
     tc->y++;
-  }
-  if (tc->y >= (box->height + box->y_corner)) {
-    tc->y = 0;
   }
 }
 
@@ -57,7 +78,7 @@ void print_hex(uint64_t num) {
   for (int i = (sizeof(uint64_t) * 8) - 4; i >= 0; i -= 4) {
     char digit = (num >> i) & 0xF;
     if (digit || started || i == 0) {
-      print_char(hex_digits[digit]);
+      print_char(hex_digits[(uint8_t)digit]);
       started = 1;
     }
   }
@@ -70,12 +91,12 @@ void print_unsigned(uint64_t num) {
   print_char('0' + (num % 10));
 }
 
-void print_signed(uint64_t num, bool is_neg) {
+void print_signed(uint64_t num_abs, bool is_neg) {
   if (is_neg) {
     print_char('-');
-    print_unsigned(-num);
+    print_unsigned(num_abs);
   } else {
-    print_unsigned(num);
+    print_unsigned(num_abs);
   }
 }
 
@@ -134,21 +155,21 @@ int printk(const char *fmt, ...) {
         // char is promoted to int when used as variadic arg, must be cast back
         break;
 
-      ///
-      ///// Ints
-      ///
+        ///
+        ///// Ints
+        ///
 
-      // Longs
+        // Longs
       case 'l':
       case 'q':
-        n = va_arg(va, int64_t);
+        n = va_arg(va, uint64_t);
         is_neg = (((int64_t)n) < 0) ? true : false;
         c = *fmt++;
         goto prant;
 
       // Shorts
       case 'h':
-        n = (va_arg(va, int32_t));
+        n = va_arg(va, uint32_t);
         // short is promoted to int when used as variadic arg
         is_neg = (((int16_t)n) < 0) ? true : false;
         c = *fmt++;
@@ -156,9 +177,12 @@ int printk(const char *fmt, ...) {
 
       // "Ints"
       case 'd':
-      case 'u':
+        n = va_arg(va, uint32_t);
+        is_neg = (((int32_t)n) < 0) ? true : false;
+        goto prant;
       case 'x':
-        n = va_arg(va, int32_t);
+      case 'u':
+        n = va_arg(va, uint32_t);
         is_neg = (((int32_t)n) < 0) ? true : false;
         goto prant;
 
@@ -191,9 +215,34 @@ int printk(const char *fmt, ...) {
   return 0;
 }
 
+void Text_Taskbar(void) {
+  vga_bg_default = VGA_BLUE;
+  vga_fg_default = VGA_BLUE;
+
+  Textbox_t bar = {.x_corner = 0,
+                   .y_corner = VGA_HEIGHT - 3,
+                   .width = VGA_WIDTH,
+                   .height = 2,
+                   .cursor = (position_t){0, VGA_HEIGHT - 3}};
+
+  set_Textbox(&bar);
+  clear_Textbox();
+}
+
 void VGA_printTest(void) {
-  VGA_cursor.x = 0;
-  VGA_cursor.y = 0;
+
+  Text_Taskbar();
+
+  vga_bg_default = VGA_DARK_GREY;
+  vga_fg_default = VGA_WHITE;
+  Textbox_t box = {.x_corner = 8,
+                   .y_corner = 2,
+                   .width = 40,
+                   .height = 15,
+                   .cursor = (position_t){8, 2}};
+
+  set_Textbox(&box);
+  clear_Textbox();
 
   printk("%c\n", 'a');                 // should be "a"
   printk("%c\n", 'Q');                 // should be "Q"
@@ -201,10 +250,10 @@ void VGA_printTest(void) {
   printk("%s\n", "test string");       // "test string"
   printk("foo%sbar\n", "blah");        // "fooblahbar"
   printk("foo%%sbar\n");               // "foo%bar"
-  printk("%d\n", INT_MIN);             // "-2147483648"
+  printk("%d\n", -2147483648);         // "-2147483648"
   printk("%d\n", INT_MAX);             // "2147483647"
   printk("%u\n", 0);                   // "0"
-  printk("%u\n", UINT_MAX);            // "4294967295"
+  printk("%u\n", 4294967295);          // "4294967295"
   printk("%x\n", 0xDEADbeef);          // "deadbeef"
   printk("%p\n", (void *)UINTPTR_MAX); // "0xFFFFFFFFFFFFFFFF"
   printk("%hd\n", 0x8000);             // "-32768"
@@ -216,6 +265,4 @@ void VGA_printTest(void) {
   printk("%qd\n", LONG_MIN);           // "-9223372036854775808"
   printk("%qd\n", LONG_MAX);           // "9223372036854775807"
   printk("%qu\n", ULONG_MAX);          // "18446744073709551615"
-
-  VGA_clear();
 }

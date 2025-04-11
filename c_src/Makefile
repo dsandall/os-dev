@@ -1,6 +1,6 @@
 
 # compile and link flags from https://wiki.osdev.org/Why_do_I_need_a_Cross_Compiler%3F
-CFLAGS = -Wall -Wextra -g -ffreestanding -mno-red-zone -fno-exceptions #-fno-rtti
+CFLAGS = -Wall -Werror -Wextra -g -ffreestanding -mno-red-zone -fno-exceptions #-fno-rtti
 CFLAGS += -fno-stack-protector
 LFLAGS = -nostdlib -lgcc
 

@@ -21,7 +21,8 @@ vga_char_t *VGA_ptr() {
 
 void VGA_display_char(char c, uint8_t fg, uint8_t bg) {
   // use given, or default to existing
-  vga_char_t vga_code = {c, fg ? fg : vga_fg_default, bg ? bg : vga_bg_default};
+  vga_char_t vga_code = {c, (fg != VGA_DEFAULT) ? fg : vga_fg_default,
+                         (bg != VGA_DEFAULT) ? bg : vga_bg_default};
   *VGA_ptr() = vga_code;
 };
 
@@ -30,7 +31,7 @@ void VGA_clear(void) {
     VGA_cursor.x = x;
     for (int y = 0; y < VGA_HEIGHT; y++) {
       VGA_cursor.y = y;
-      VGA_display_char('.', VGA_PURPLE, VGA_PURPLE);
+      VGA_display_char('.', VGA_BLACK, VGA_BLACK);
     }
   }
 };

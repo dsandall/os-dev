@@ -1,6 +1,8 @@
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
+#define VGA_DEFAULT 0xFF
+#define VGA_BLACK 0x00
 #define VGA_BLUE 0x01
 #define VGA_GREEN 0x02
 #define VGA_CYAN 0x03
