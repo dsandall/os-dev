@@ -33,5 +33,6 @@ extern uint8_t vga_bg_default;
 extern uint8_t vga_fg_default;
 
 void VGA_display_char(char c, uint8_t fg, uint8_t bg);
+vga_char_t VGA_get_char(void);
 // void VGA_setpos(int x, int y); // global instead
 void VGA_clear(void);

@@ -25,7 +25,80 @@ void clear_Textbox(void) {
   box->cursor.y = box->y_corner;
 };
 
+void scroll_Textbox(void) {
+
+  Textbox_t *box = currentTextbox;
+
+  for (int y = box->y_corner; y < (box->height + box->y_corner - 1); y++) {
+    for (int x = box->x_corner; x < (box->width + box->x_corner); x++) {
+
+      VGA_cursor.y = y + 1;
+      VGA_cursor.x = x;
+      vga_char_t c = VGA_get_char();
+
+      VGA_cursor.y = y;
+      VGA_cursor.x = x;
+      VGA_display_char(c.character, c.fg_color, c.bg_color);
+    }
+  }
+}
+
+void clear_Line() {
+
+  Textbox_t *box = currentTextbox;
+
+  int y = box->height + box->y_corner - 1;
+  for (int x = box->x_corner; x < (box->width + box->x_corner); x++) {
+    VGA_cursor.y = y;
+    VGA_cursor.x = x;
+    VGA_display_char(' ', VGA_DEFAULT, VGA_DEFAULT);
+  }
+};
+
 void print_char(char c) {
+  Textbox_t *box = currentTextbox;
+  position_t *tc = &currentTextbox->cursor;
+
+  // Wrapping Logic
+  // if (tc->y >= (box->height + box->y_corner)) {
+  //  tc->y = box->y_corner;
+  //  clear_Textbox();
+  //}
+
+  tc->y = box->y_corner + box->height - 1;
+
+  switch (c) {
+  case '\n':
+    tc->x = box->x_corner;
+    scroll_Textbox();
+    tc->y = box->y_corner + box->height - 1;
+
+    clear_Line();
+
+    break;
+  case '\r':
+    tc->x = box->x_corner;
+    break;
+  default:
+
+    VGA_cursor = *tc;
+    VGA_display_char(c, VGA_DEFAULT, VGA_DEFAULT);
+
+    tc->x++;
+  }
+
+  // Wrapping Logic
+  // check bounds after updating text cursor position
+  if (tc->x >= (box->width + box->x_corner)) {
+    scroll_Textbox();
+
+    tc->x = box->x_corner;
+    tc->y = box->y_corner + box->height - 1;
+  }
+}
+
+/*
+void print_char_clearing(char c) {
   Textbox_t *box = currentTextbox;
   position_t *tc = &currentTextbox->cursor;
 
@@ -58,6 +131,7 @@ void print_char(char c) {
     tc->y++;
   }
 }
+*/
 
 void print_str(const char *str) {
   while (*str != '\0') {
@@ -100,19 +174,7 @@ void print_signed(uint64_t num_abs, bool is_neg) {
   }
 }
 
-// void print_number(uint64_t num, enum format fmt) {
-//   if (fmt == Hex) {
-//     print_hex(num); // Print in hexadecimal format
-//   } else if (fmt == Unsigned) {
-//     print_unsigned(num); // Print in unsigned decimal format
-//   } else if (fmt == Signed) {
-//     print_signed(num); // Print in signed decimal format
-//   }
-// }
-
-// TODO:
-//__attribute__((format(printf, 1, 2)))
-int printk(const char *fmt, ...) {
+__attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...) {
 
   // %% %d %u %x %c %p %h[dux] %l[dux] %q[dux] %s
   va_list va;
@@ -265,4 +327,5 @@ void VGA_printTest(void) {
   printk("%qd\n", LONG_MIN);           // "-9223372036854775808"
   printk("%qd\n", LONG_MAX);           // "9223372036854775807"
   printk("%qu\n", ULONG_MAX);          // "18446744073709551615"
+  //
 }

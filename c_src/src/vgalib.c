@@ -26,6 +26,13 @@ void VGA_display_char(char c, uint8_t fg, uint8_t bg) {
   *VGA_ptr() = vga_code;
 };
 
+vga_char_t VGA_get_char(void) {
+  // use given, or default to existing
+  vga_char_t c;
+  c = *VGA_ptr();
+  return c;
+};
+
 void VGA_clear(void) {
   for (int x = 0; x < VGA_WIDTH; x++) {
     VGA_cursor.x = x;
