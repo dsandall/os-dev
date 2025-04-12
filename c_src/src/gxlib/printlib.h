@@ -12,6 +12,6 @@ void Text_write_in(char c);
 
 void set_Textbox(Textbox_t *box);
 
-int printk(const char *fmt, ...);
+__attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...);
 
-void VGA_printTest(void);
+void VGA_printTest(Textbox_t *box);

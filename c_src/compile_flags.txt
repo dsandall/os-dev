@@ -8,3 +8,4 @@
 -fno-stack-protector
 -Isrc
 -Isrc/gxlib
+-Isrc/ps2

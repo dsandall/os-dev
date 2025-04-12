@@ -1,0 +1,93 @@
+#include "freestanding.h"
+
+typedef enum {
+  SC2_NONE = 0x00,
+  SC2_ESC = 0x76,
+  SC2_1 = 0x16,
+  SC2_2 = 0x1E,
+  SC2_3 = 0x26,
+  SC2_4 = 0x25,
+  SC2_5 = 0x2E,
+  SC2_6 = 0x36,
+  SC2_7 = 0x3D,
+  SC2_8 = 0x3E,
+  SC2_9 = 0x46,
+  SC2_0 = 0x45,
+  SC2_MINUS = 0x4E,
+  SC2_EQUAL = 0x55,
+  SC2_BACKSPACE = 0x66,
+  SC2_TAB = 0x0D,
+
+  SC2_Q = 0x15,
+  SC2_W = 0x1D,
+  SC2_E = 0x24,
+  SC2_R = 0x2D,
+  SC2_T = 0x2C,
+  SC2_Y = 0x35,
+  SC2_U = 0x3C,
+  SC2_I = 0x43,
+  SC2_O = 0x44,
+  SC2_P = 0x4D,
+  SC2_LBRACKET = 0x54,
+  SC2_RBRACKET = 0x5B,
+  SC2_ENTER = 0x5A,
+  SC2_CTRL = 0x14,
+
+  SC2_A = 0x1C,
+  SC2_S = 0x1B,
+  SC2_D = 0x23,
+  SC2_F = 0x2B,
+  SC2_G = 0x34,
+  SC2_H = 0x33,
+  SC2_J = 0x3B,
+  SC2_K = 0x42,
+  SC2_L = 0x4B,
+  SC2_SEMICOLON = 0x4C,
+  SC2_APOSTROPHE = 0x52,
+  SC2_BACKTICK = 0x0E,
+
+  SC2_LSHIFT = 0x12,
+  SC2_BACKSLASH = 0x5D,
+  SC2_Z = 0x1A,
+  SC2_X = 0x22,
+  SC2_C = 0x21,
+  SC2_V = 0x2A,
+  SC2_B = 0x32,
+  SC2_N = 0x31,
+  SC2_M = 0x3A,
+  SC2_COMMA = 0x41,
+  SC2_DOT = 0x49,
+  SC2_SLASH = 0x4A,
+  SC2_RSHIFT = 0x59,
+
+  SC2_ALT = 0x11,
+  SC2_SPACE = 0x29,
+  SC2_CAPSLOCK = 0x58,
+
+  SC2_EXTENDED = 0xE0,
+  SC2_BREAK = 0xF0
+} ps2_scancode2_t;
+
+static const char scancode_ascii_map[128] = {
+    [SC2_1] = '1',        [SC2_2] = '2',          [SC2_3] = '3',
+    [SC2_4] = '4',        [SC2_5] = '5',          [SC2_6] = '6',
+    [SC2_7] = '7',        [SC2_8] = '8',          [SC2_9] = '9',
+    [SC2_0] = '0',        [SC2_MINUS] = '-',      [SC2_EQUAL] = '=',
+    [SC2_Q] = 'q',        [SC2_W] = 'w',          [SC2_E] = 'e',
+    [SC2_R] = 'r',        [SC2_T] = 't',          [SC2_Y] = 'y',
+    [SC2_U] = 'u',        [SC2_I] = 'i',          [SC2_O] = 'o',
+    [SC2_P] = 'p',        [SC2_A] = 'a',          [SC2_S] = 's',
+    [SC2_D] = 'd',        [SC2_F] = 'f',          [SC2_G] = 'g',
+    [SC2_H] = 'h',        [SC2_J] = 'j',          [SC2_K] = 'k',
+    [SC2_L] = 'l',        [SC2_Z] = 'z',          [SC2_X] = 'x',
+    [SC2_C] = 'c',        [SC2_V] = 'v',          [SC2_B] = 'b',
+    [SC2_N] = 'n',        [SC2_M] = 'm',          [SC2_SPACE] = ' ',
+    [SC2_ENTER] = '\n',   [SC2_COMMA] = ',',      [SC2_DOT] = '.',
+    [SC2_SLASH] = '/',    [SC2_SEMICOLON] = ';',  [SC2_APOSTROPHE] = '\'',
+    [SC2_BACKTICK] = '`', [SC2_BACKSLASH] = '\\', [SC2_LBRACKET] = '[',
+    [SC2_RBRACKET] = ']',
+};
+
+//////////
+// Helpers
+//////////

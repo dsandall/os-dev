@@ -14,6 +14,9 @@ BUILD=$(BLUE)[BUILD]$(RESET)
 LINK=$(GREEN)[LINK]$(RESET)
 CLEAN=$(BLUE)[CLEAN]$(RESET)
 
+BOOT_OBJS := $(shell find ./build -name '*.o')
+C_OBJS := $(shell find ./c_src/build -name '*.o')
+
 # Default target
 all: clean link
 	@printf "$(INFO) Copying grub.cfg, linking grub code, and building ISO with grub-mkrescue...\n"
@@ -36,7 +39,7 @@ link: boot
 	ld --nmagic -nostdlib \
 		--output build/isofiles/boot/kernel.bin \
 		--script src/linker.ld \
-		build/*.o ./c_src/build/*.o
+		$(BOOT_OBJS) $(C_OBJS)
 	@#printf "$(INFO) Section headers:\n"
 	@#objdump -h kernel.bin
 

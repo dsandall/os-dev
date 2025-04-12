@@ -7,24 +7,22 @@ LFLAGS = -nostdlib -lgcc
 #SRCS = src/kernel_main.c src/sealib.c src/vgalib.c
 #OBJS = $(SRCS:.c=.o)
 
-# Name of the output binary
-# OUTPUT = kernel_packed.o
+# Find all .c files recursively in src/
+SRC := $(shell find src -name '*.c')
 
-all: clean
-# Rule to compile .c files into .o files
-	mkdir build
-	clang $(CFLAGS) -c src/gxlib/printlib.c -o build/printlib.o
-	clang $(CFLAGS) -c src/sealib.c -o build/sealib.o
-	clang $(CFLAGS) -c src/gxlib/vgalib.c -o build/vgalib.o
-	clang $(CFLAGS) -c src/kernel_main.c -o build/kernel_main.o
+# Replace src/ with build/ and .c with .o
+OBJ := $(patsubst src/%.c,build/%.o,$(SRC))
 
-## Rule to create the final binary by linking the object files
-#$(OUTPUT): $(OBJS)
-#	gcc $(LFLAGS) $(OBJS) -o $(OUTPUT)
-#
-#	ar rcs  
+# Default target
+all:  clean $(OBJ)
 
-# Clean up the build directory and object files
+# Pattern rule to compile .c -> .o
+build/%.o: src/%.c
+	@mkdir -p $(dir $@)
+	clang $(CFLAGS) -c $< -o $@
+
+
 clean:
-	rm -rf build $(OBJS) $(OUTPUT)
+	rm -rf build
+	mkdir build
 

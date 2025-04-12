@@ -291,19 +291,14 @@ void Text_Taskbar(void) {
   clear_Textbox();
 }
 
-void VGA_printTest(void) {
+void VGA_printTest(Textbox_t *box) {
 
   Text_Taskbar();
 
   vga_bg_default = VGA_DARK_GREY;
   vga_fg_default = VGA_WHITE;
-  Textbox_t box = {.x_corner = 8,
-                   .y_corner = 2,
-                   .width = 40,
-                   .height = 15,
-                   .cursor = (position_t){8, 2}};
 
-  set_Textbox(&box);
+  set_Textbox(box);
   clear_Textbox();
 
   printk("%c\n", 'a');                 // should be "a"

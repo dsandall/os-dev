@@ -1,5 +1,5 @@
-break src/kernel_main.c:8
+break init_PS2
 c
-disp i 
-disp x
+
+
 
