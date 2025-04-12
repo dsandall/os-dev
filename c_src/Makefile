@@ -10,8 +10,6 @@ LFLAGS = -nostdlib -lgcc
 # Name of the output binary
 # OUTPUT = kernel_packed.o
 
-INC = -Iinc
-
 all: clean
 # Rule to compile .c files into .o files
 	mkdir build
