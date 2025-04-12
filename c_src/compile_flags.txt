@@ -1,0 +1,10 @@
+-Wall
+-Wextra
+-g
+-ffreestanding
+-mno-red-zone
+-fno-exceptions
+-fno-rtti
+-fno-stack-protector
+-Isrc
+-Isrc/gxlib

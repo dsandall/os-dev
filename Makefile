@@ -36,7 +36,7 @@ link: boot
 	ld --nmagic -nostdlib \
 		--output build/isofiles/boot/kernel.bin \
 		--script src/linker.ld \
-		build/multiboot_header.o build/boot.o build/longboot.o ./c_src/src/kernel_main.o ./c_src/src/sealib.o ./c_src/src/vgalib.o ./c_src/src/printlib.o
+		build/*.o ./c_src/build/*.o
 	@#printf "$(INFO) Section headers:\n"
 	@#objdump -h kernel.bin
 

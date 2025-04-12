@@ -312,7 +312,7 @@ void VGA_printTest(void) {
   printk("%s\n", "test string");       // "test string"
   printk("foo%sbar\n", "blah");        // "fooblahbar"
   printk("foo%%sbar\n");               // "foo%bar"
-  printk("%d\n", -2147483648);         // "-2147483648"
+  printk("%d\n", INT_MIN);             // "-2147483648"
   printk("%d\n", INT_MAX);             // "2147483647"
   printk("%u\n", 0);                   // "0"
   printk("%u\n", 4294967295);          // "4294967295"
