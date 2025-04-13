@@ -36,7 +36,7 @@ uint8_t lazytx(uint8_t tx) {
     oldrx = rx;                                                                \
   } while (0)
 
-void funcy() {
+void bad_poll_for_keys() {
   POLL_STATUS_WHILE((!stat.output_full));
 
   uint8_t rx = PS2_RX();
@@ -48,8 +48,8 @@ void funcy() {
 
     // rx in chunks of make,
     // break make,
-    // or extended make make
-    // or extended + break + make + make
+    // or extended make
+    // or extended + break + make
 
     if (rx == SC2_BREAK) {
       // break make
@@ -74,6 +74,8 @@ void funcy() {
       // printk("press %hx, %c\n", rx, scancode_ascii_map[rx]);
       printk("%c", scancode_ascii_map[rx]);
     }
+
+    __asm__("int $3"); // Breakpoint interrupt (crashes system)
   }
 }
 
@@ -105,7 +107,7 @@ void init_PS2_keyboard() {
 
   while (1) {
     print_statusreg();
-    funcy();
+    bad_poll_for_keys();
   }
 
   return;

@@ -31,7 +31,11 @@ all: clean link
 build_fat_img:
 	fish --init-command='set fish_trace on' createfat32img.fish
 	@printf "$(INFO) Running OS...\n"
-	qemu-system-x86_64 -S -s -drive format=raw,file=build/fat32.img -serial stdio
+	qemu-system-x86_64 \
+		-drive format=raw,file=build/fat32.img\
+		-S -s\
+		-d int,cpu_reset \
+		-serial stdio
 
 link: boot
 	@printf "$(LINK) Linking into kernel.bin...\n"
@@ -50,6 +54,7 @@ boot: src/boot.asm src/longboot.asm src/multiboot_header.asm
 	nasm -f elf64 -o build/multiboot_header.o src/multiboot_header.asm
 	nasm -f elf64 -o build/boot.o src/boot.asm
 	nasm -f elf64 -o build/longboot.o src/longboot.asm
+	#nasm -f elf64 -o build/isr_wrapper.o ./c_src/src/interrupts/isr_wrapper.s
 	@# nasm boot.asm
 	@# hexdump -x boot
 	@# ndisasm -b 32 boot

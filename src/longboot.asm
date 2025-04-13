@@ -20,13 +20,13 @@ long_mode_start:
     mov rax, 0x2f592f412f4b2f4f
     mov qword [0xb8000], rax
 
-; here it is!
+  ; here it is!
     call kernel_main
 
   ; print smudged `OKAY`s to screen
-    mov rax, 0x2f592f412f4b2f4f
-    mov qword [0xb8000], rax
-    mov qword [0xb8004], rax
-    mov qword [0xb8008], rax
-    mov qword [0xb800F], rax
-    hlt
+  ;  mov rax, 0x2f592f412f4b2f4f
+  ;  mov qword [0xb8000], rax
+  ;  mov qword [0xb8004], rax
+  ;  mov qword [0xb8008], rax
+  ;  mov qword [0xb800F], rax
+  ;  hlt

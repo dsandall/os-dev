@@ -2,6 +2,7 @@
 
 global start
 extern long_mode_start
+extern epic_interrupt_handler
 
 section .text
 bits 32
@@ -21,8 +22,12 @@ start:
   ; https://os.phil-opp.com/entering-longmode/#loading-the-gdt
   ; load the 64-bit GDT and test 64 bit code execution
   lgdt [gdt64.pointer]
+
+  ; longjump (code selector):(section name) 
+  ; forces a context switch to flush lgdt
   jmp gdt64.code:long_mode_start
  
+  ; this code is never reached
   ; print 'OK' to screen
   mov dword [0xb8000], 0x2f4b2f4f
   hlt
@@ -58,7 +63,7 @@ error:
     pushfd
     pop eax
 
-    ; Copy to ECX as well for comparing later on
+    ; Copy to ECX as well for com-drive format=raw,file=build/fat32.img -S -s -d int,cpu_reset -serial stdioparing later on
     mov ecx, eax
 
     ; Flip the ID bit
@@ -182,9 +187,15 @@ stack_top:
 ; create new 64 bit GDT, so that we can switch to 64 bit mode (instead of long mode, with 32b compatibility mode)
 section .rodata
 gdt64:
-    dq 0 ; zero entry
-.code: equ $ - gdt64 ; new
-    dq (1<<43) | (1<<44) | (1<<47) | (1<<53) ; code segment
+    dq 0                          ; null descriptor (mandatory)
+.code: equ $ - gdt64              ; label to mark the offset of the code segment (selector will be .code)
+    ; 64-bit code segment descriptor
+    dq (1 << 43) | (1 << 44) | (1 << 47) | (1 << 53)
+    ; Explanation:
+    ; Bit 43 = executable (type bit)
+    ; Bit 44 = readable
+    ; Bit 47 = present
+    ; Bit 53 = long mode (L bit)
 .pointer:
-    dw $ - gdt64 - 1
-    dq gdt64
+    dw $ - gdt64 - 1              ; limit (size of GDT - 1)
+    dq gdt64                      ; base address of the GDT

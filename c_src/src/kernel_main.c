@@ -1,5 +1,9 @@
+#include "interrupts.h"
 #include "printlib.h"
 #include "ps2_keyboard.h"
+
+extern void init_IDT(void);
+extern void do_PIC(void);
 
 void kernel_main() {
 
@@ -11,7 +15,11 @@ void kernel_main() {
 
   VGA_printTest(&box);
 
-  while (1) {
-    init_PS2();
-  }
+  //__asm__("int $3"); // Breakpoint interrupt (doesnt seem to do anything)
+  init_IDT();
+  do_PIC();
+
+  printk("nugget\n");
+
+  init_PS2();
 }

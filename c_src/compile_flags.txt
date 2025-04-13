@@ -9,3 +9,4 @@
 -Isrc
 -Isrc/gxlib
 -Isrc/ps2
+-Isrc/interrupts

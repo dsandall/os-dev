@@ -1,10 +1,17 @@
 ;https://wiki.osdev.org/Interrupt_Service_Routines#Compiler_Specific_Interrupt_Directives
-.globl   isr_wrapper
-.align   4
+; filename: isr_wrapper.s
 
-isr_wrapper:
+global isr_wrapper
+extern interrupt_handler
+
+section .text
+bits 64
+
+; .align   4
+
+not_isr_wrapper:
     pushad
     cld    ; C code following the sysV ABI requires DF to be clear on function entry
     call interrupt_handler
     popad
-    iret
+    iretq  ; changed to q

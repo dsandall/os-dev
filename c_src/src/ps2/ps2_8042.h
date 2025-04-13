@@ -1,5 +1,4 @@
 #include "freestanding.h"
-#include <sys/io.h>
 
 #define PS2_DATA_IN_OUT 0x60
 #define PS2_RX() ((uint8_t)inb(PS2_DATA_IN_OUT))
