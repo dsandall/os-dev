@@ -57,9 +57,9 @@ void PIC_remap(int offset1, int offset2) {
   io_wait();
   outb(PIC2_DATA, offset2); // ICW2: Slave PIC vector offset
   io_wait();
-  outb(
-      PIC1_DATA,
-      4); // ICW3: tell Master PIC that there is a slave PIC at IRQ2 (0000 0100)
+  outb(PIC1_DATA,
+       4); // ICW3: tell Master PIC that there is a slave PIC a /t IRQ2 (0000
+           // 0100)
   io_wait();
   outb(PIC2_DATA, 2); // ICW3: tell Slave PIC its cascade identity (0000 0010)
   io_wait();
@@ -69,10 +69,6 @@ void PIC_remap(int offset1, int offset2) {
   io_wait();
   outb(PIC2_DATA, ICW4_8086);
   io_wait();
-
-  // Unmask both PICs.
-  outb(PIC1_DATA, 0);
-  outb(PIC2_DATA, 0);
 }
 
 ///////////
@@ -163,13 +159,16 @@ int ticks = 0;
 // IRQ_set_handler(32, my_timer_handler, &ticks); // IRQ 32 = PIT timer
 
 void do_PIC(void) {
-  PIC_remap(0x20, 0x28); // remap to 0x20-0x2F
-  //
-  printk("mask is %hx\n", IRQ_get_mask());
 
-  for (int i = 0; i < 16; i++) {
-    IRQ_clear_mask(i);
-  }
+  // remap to 0x20-0x2F
+  PIC_remap(0x20, 0x28);
 
-  printk("mask is %hx\n", IRQ_get_mask());
+  printk("mask is %x\n", IRQ_get_mask());
+  // Unmask both PICs.
+  outb(PIC1_DATA, 0);
+  outb(PIC2_DATA, 0);
+  printk("mask is %x\n", IRQ_get_mask());
+
+  printk("irr is %hx\n", pic_get_irr());
+  printk("isr is %hx\n", pic_get_isr());
 }

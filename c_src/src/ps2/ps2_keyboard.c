@@ -75,7 +75,7 @@ void bad_poll_for_keys() {
       printk("%c", scancode_ascii_map[rx]);
     }
 
-    __asm__("int $3"); // Breakpoint interrupt (crashes system)
+    //__asm__("int $3"); // Breakpoint interrupt (crashes system)
   }
 }
 

@@ -27,15 +27,19 @@ Interrupt_CGD_t interrupt_descriptor_table[IDT_size];
 ///////////////////////////////////////
 
 struct interrupt_frame {
-  uint64_t rip;
-  uint64_t cs;
-  uint64_t flags;
-  uint64_t rsp;
-  uint64_t ss;
+  uint64_t rip;   // "return to" address
+  uint64_t cs;    // code segment executed from
+  uint64_t flags; // interrupt vector #?
+  uint64_t rsp; // stack pointer (assuming this is used for restoring state upon
+                // return)
+  uint64_t ss;  // stack segment
 };
 
 __attribute__((interrupt)) void
 epic_interrupt_handler(struct interrupt_frame *frame) {
+
+  uint8_t int_vector = frame->flags;
+
   /* do something */
   for (size_t i = 1; i <= 4; i++) {
     static int x;

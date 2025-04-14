@@ -15,11 +15,12 @@ void kernel_main() {
 
   VGA_printTest(&box);
 
-  //__asm__("int $3"); // Breakpoint interrupt (doesnt seem to do anything)
   init_IDT();
   do_PIC();
 
   printk("nugget\n");
+
+  __asm__("int $3"); // Breakpoint interrupt (doesnt seem to do anything)
 
   init_PS2();
 }

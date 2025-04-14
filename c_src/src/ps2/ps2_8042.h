@@ -4,14 +4,14 @@
 #define PS2_RX() ((uint8_t)inb(PS2_DATA_IN_OUT))
 #define PS2_TX(x)                                                              \
   do {                                                                         \
-    outb(x, PS2_DATA_IN_OUT);                                                  \
+    outb(PS2_DATA_IN_OUT, x);                                                  \
   } while (0)
 
 #define PS2_STATUS_COMMAND 0x64
 #define PS2_STATUS() ((status_register_t)inb(PS2_STATUS_COMMAND))
 #define PS2_COMMAND(x)                                                         \
   do {                                                                         \
-    outb(x, PS2_STATUS_COMMAND);                                               \
+    outb(PS2_STATUS_COMMAND, x);                                               \
   } while (0)
 
 #define POLL_STATUS_WHILE(x)                                                   \
