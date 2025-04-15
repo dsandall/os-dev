@@ -20,7 +20,18 @@ void kernel_main() {
 
   printk("nugget\n");
 
-  __asm__("int $3"); // Breakpoint interrupt (doesnt seem to do anything)
+  __asm__("int $12"); // Breakpoint interrupt (doesnt seem to do anything)
+  printk("nugget 12\n");
+  __asm__("int $15"); // Breakpoint interrupt (doesnt seem to do anything)
+  printk("nugget 15\n");
+  __asm__("int $220"); // Breakpoint interrupt (doesnt seem to do anything)
+  printk("nugget 18\n");
+  __asm__("int $30"); // Breakpoint interrupt (doesnt seem to do anything)
+  printk("nugget 33\n");
+  __asm__("int $31"); // Breakpoint interrupt (doesnt seem to do anything)
+  printk("nugget 40\n");
+  __asm__("int $32"); // Breakpoint interrupt (doesnt seem to do anything)
+  printk("nugget winner\n");
 
   init_PS2();
 }

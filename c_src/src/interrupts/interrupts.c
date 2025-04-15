@@ -97,5 +97,5 @@ void init_IDT(void) {
   }
 
   lidt(&interrupt_descriptor_table,
-       ((uint16_t)sizeof(uint16_t) * IDT_size) - 1);
+       (uint16_t)(sizeof(Interrupt_CGD_t) * IDT_size) - 1);
 };
