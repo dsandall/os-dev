@@ -47,14 +47,14 @@ link: boot
 	@#printf "$(INFO) Section headers:\n"
 	@#objdump -h kernel.bin
 
-boot: src/boot.asm src/longboot.asm src/multiboot_header.asm
+boot: src/boot.asm src/longboot.asm src/multiboot_header.asm src/isr_wrapper.s
 	@printf "$(BUILD) Assembling multiboot header...\n"
 	@printf "$(BUILD) Assembling bootcode called by grub...\n"
 	@printf "$(BUILD) Assembling longmode boot code called by 32b bootcode...\n"
 	nasm -f elf64 -o build/multiboot_header.o src/multiboot_header.asm
 	nasm -f elf64 -o build/boot.o src/boot.asm
 	nasm -f elf64 -o build/longboot.o src/longboot.asm
-	#nasm -f elf64 -o build/isr_wrapper.o ./c_src/src/interrupts/isr_wrapper.s
+	nasm -f elf64 -o build/isr_wrapper.o src/isr_wrapper.s
 	@# nasm boot.asm
 	@# hexdump -x boot
 	@# ndisasm -b 32 boot

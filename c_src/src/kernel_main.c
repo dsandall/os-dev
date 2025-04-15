@@ -26,9 +26,9 @@ void kernel_main() {
   printk("nugget 15\n");
   __asm__("int $220"); // Breakpoint interrupt (doesnt seem to do anything)
   printk("nugget 18\n");
-  __asm__("int $30"); // Breakpoint interrupt (doesnt seem to do anything)
+  __asm__("int $255"); // Breakpoint interrupt (doesnt seem to do anything)
   printk("nugget 33\n");
-  __asm__("int $31"); // Breakpoint interrupt (doesnt seem to do anything)
+  __asm__("int $0"); // Breakpoint interrupt (doesnt seem to do anything)
   printk("nugget 40\n");
   __asm__("int $32"); // Breakpoint interrupt (doesnt seem to do anything)
   printk("nugget winner\n");

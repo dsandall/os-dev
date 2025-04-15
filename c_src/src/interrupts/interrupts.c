@@ -25,7 +25,7 @@ Interrupt_CGD_t interrupt_descriptor_table[IDT_size];
 ///////////////////////////////////////
 /// The actual handler
 ///////////////////////////////////////
-
+/*
 struct interrupt_frame {
   uint64_t rip;   // "return to" address
   uint64_t cs;    // code segment executed from
@@ -40,12 +40,17 @@ epic_interrupt_handler(struct interrupt_frame *frame) {
 
   uint8_t int_vector = frame->flags;
 
-  /* do something */
+  // do something
   for (size_t i = 1; i <= 4; i++) {
     static int x;
     x++;
   }
   // printk("legitness\n");
+}
+*/
+
+void asm_int_handler(uint16_t *ptr) {
+  uint16_t val = *ptr; // val == 0x1234
 }
 
 ///////////////////////////////////////
@@ -76,9 +81,10 @@ static inline void lidt(void *base, uint16_t size) {
  *rest of your interrupt handling code
  */
 
+extern void isr_wrapper(void);
 void init_IDT(void) {
 
-  void *isr_addr = epic_interrupt_handler;
+  void *isr_addr = isr_wrapper;
 
   // put a CGD in the table
   Interrupt_CGD_t cgd = {.add_1 = (uint64_t)isr_addr,

@@ -2,7 +2,6 @@
 
 global start
 extern long_mode_start
-extern epic_interrupt_handler
 
 section .text
 bits 32
