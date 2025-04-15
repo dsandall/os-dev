@@ -1,5 +1,7 @@
 #include "interrupts.h"
 #include "freestanding.h"
+#include "macro_magic.h"
+#include "printlib.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -51,6 +53,7 @@ epic_interrupt_handler(struct interrupt_frame *frame) {
 
 void asm_int_handler(uint16_t *ptr) {
   uint16_t val = *ptr; // val == 0x1234
+  printk("%d\n", val);
 }
 
 ///////////////////////////////////////
@@ -81,25 +84,19 @@ static inline void lidt(void *base, uint16_t size) {
  *rest of your interrupt handling code
  */
 
-extern void isr_wrapper(void);
 void init_IDT(void) {
 
-  void *isr_addr = isr_wrapper;
-
-  // put a CGD in the table
-  Interrupt_CGD_t cgd = {.add_1 = (uint64_t)isr_addr,
-                         .add_2 = ((uint64_t)isr_addr >> 16),
-                         .add_3 = ((uint64_t)isr_addr >> 32),
-                         .present = true,
-                         .DPL = X86_DPL_RING0,
-                         .gate_type = X86_GATETYPE_HWINT,
-                         .GDT_segment = X86_GDT_SEGMENT}; // WARN: verify this
-
-  // address should be isr_wrapper.asm?
-  // which handles push/pop and calls C func
-
   for (int i = 0; i < IDT_size; i++) {
-    interrupt_descriptor_table[i] = cgd;
+    uint64_t addr = (uint64_t)isr_wrappers[i];
+    interrupt_descriptor_table[i] = (Interrupt_CGD_t){
+        .add_1 = addr,
+        .add_2 = addr >> 16,
+        .add_3 = addr >> 32,
+        .present = true,
+        .DPL = X86_DPL_RING0,
+        .gate_type = X86_GATETYPE_HWINT,
+        .GDT_segment = X86_GDT_SEGMENT,
+    };
   }
 
   lidt(&interrupt_descriptor_table,

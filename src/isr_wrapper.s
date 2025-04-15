@@ -2,19 +2,21 @@
 ; filename: isr_wrapper.s
 
 
-global isr_wrapper
 extern asm_int_handler
 
 section .text
 bits 64
 
-isr_wrapper:
+; interrupt wrapper definition
+%macro ISR_WRAPPER 1
+global isr_wrapper_%1
+isr_wrapper_%1:
     ; Save all general-purpose registers
     push rax
     push rcx
     push rdx
     push rbx
-    push rsp        ; Save current RSP (optional, for debugging)
+    ; push rsp      ; Optional, probably don't do this
     push rbp
     push rsi
     push rdi
@@ -26,16 +28,15 @@ isr_wrapper:
     push r13
     push r14
     push r15
+    cld
 
-    cld             ; Clear direction flag for C ABI compatibility
+    mov rax, %1
+    push rax
+    lea rdi, [rsp]
+    call asm_int_handler
+    add rsp, 8
 
-
-mov rax, 0x1234
-push rax               ; [rsp] = 0x1234
-lea rdi, [rsp]         ; pass address of the pushed value
-call asm_int_handler
-add rsp, 8
-    ; Restore all general-purpose registers (in reverse order)
+    ; Restore general-purpose registers
     pop r15
     pop r14
     pop r13
@@ -47,11 +48,18 @@ add rsp, 8
     pop rdi
     pop rsi
     pop rbp
-    pop rsp         ; Only safe if previously pushed (usually omit this one)
+    ; pop rsp      ; Usually skip this
     pop rbx
     pop rdx
     pop rcx
     pop rax
 
     iretq
+%endmacro
 
+; generate 256 different interrupt_wrappers
+%assign i 0
+%rep 256
+    ISR_WRAPPER i
+    %assign i i+1
+%endrep
