@@ -10,3 +10,4 @@
 -Isrc/gxlib
 -Isrc/ps2
 -Isrc/interrupts
+-Isrc/ipc_channel

@@ -83,6 +83,9 @@ uint8_t lazytx(uint8_t tx) {
 // }
 
 void init_PS2_keyboard() {
+
+  //__asm__("int $3");
+
   if (lazytx(0xFF) != 0xFA) {
     asm("hlt");
   } else if (PS2_RX() != 0xAA) {
@@ -94,6 +97,8 @@ void init_PS2_keyboard() {
   //    asm("hlt");
   //  }
 
+  //__asm__("int $3");
+
   POLL_STATUS_WHILE(stat.input_full);
   PS2_TX(0xF0);
   POLL_STATUS_WHILE(stat.input_full);
@@ -102,6 +107,8 @@ void init_PS2_keyboard() {
   if (PS2_RX() != 0xFA) {
     asm("hlt");
   }
+
+  //__asm__("int $3");
 
   // enable it
   if (lazytx(0xF4) != 0xFA) {
@@ -115,9 +122,12 @@ void init_PS2_keyboard() {
 //  if keeb: read ps2 port byte
 //  set flag:
 
-void isr_driven_keyboard() {
+uint8_t PS2_RX_wrap() {
   uint8_t rx = PS2_RX();
-  uint8_t oldrx = ~rx;
+  return rx;
+}
+
+void isr_driven_keyboard(uint8_t rx_byte) {
 
   // rx in chunks of make,
   // break make,
@@ -126,7 +136,7 @@ void isr_driven_keyboard() {
   static enum { BLANK, BRK, EXT, EXTBRK } state;
 
   printk("thebuggg \n");
-  switch (rx) {
+  switch (rx_byte) {
   case SC2_BREAK:
     if (state == EXT) {
       state = EXTBRK;
@@ -145,13 +155,13 @@ void isr_driven_keyboard() {
       printk("ext not handled\n");
       state = BLANK;
     } else if (state == BRK) {
-      printk("releasing %c\n", scancode_ascii_map[rx]);
+      printk("releasing %c\n", scancode_ascii_map[rx_byte]);
       state = BLANK;
     } else if (state == EXTBRK) {
       printk("extBRK not handled\n");
       state = BLANK;
     } else if (state == BLANK) {
-      printk("blnk: %c\n", scancode_ascii_map[rx]);
+      printk("blnk: %c\n", scancode_ascii_map[rx_byte]);
       state = BLANK;
     }
     break;

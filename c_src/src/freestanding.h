@@ -31,4 +31,8 @@ static __inline void outb(unsigned short int __port, unsigned char __value) {
 
 static inline void io_wait(void) { outb(0x80, 0); }
 
+#define ERR_LOOP()                                                             \
+  while (1) {                                                                  \
+  }
+
 #endif // FREESTANDING_H

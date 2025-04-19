@@ -34,7 +34,7 @@ isr_wrapper_%1:
     push rax
     lea rdi, [rsp]
     call asm_int_handler
-    add rsp, 8
+    add rsp, 8 ; move sp 64bits 
 
     ; Restore general-purpose registers
     pop r15
@@ -48,7 +48,7 @@ isr_wrapper_%1:
     pop rdi
     pop rsi
     pop rbp
-    ; pop rsp      ; Usually skip this
+    ; pop rsp      ; skip this
     pop rbx
     pop rdx
     pop rcx

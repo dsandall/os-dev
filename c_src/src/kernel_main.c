@@ -7,6 +7,7 @@ extern void do_PIC(void);
 extern void IRQ_set_mask(uint8_t IRQline);
 extern volatile uint32_t isr_flag;
 extern void isr_common_handler(int isr_flag);
+extern int async_main(void);
 
 void kernel_main() {
 
@@ -21,10 +22,9 @@ void kernel_main() {
   init_IDT();
   do_PIC();
   IRQ_set_mask(0); // disable the timer
-  __asm__("sti");  // enable interrupts
-
   init_PS2();
 
-  while (1) {
-  }
+  // now ps2 is set up and you should be rxing keeb interrupts
+
+  async_main();
 }
