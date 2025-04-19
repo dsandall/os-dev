@@ -16,14 +16,9 @@
 
 #define POLL_STATUS_WHILE(x)                                                   \
   do {                                                                         \
-    uint16_t timer = 10000; /*block for a little while*/                       \
     status_register_t stat;                                                    \
     do {                                                                       \
       stat = PS2_STATUS();                                                     \
-      timer--;                                                                 \
-      if (!timer) {                                                            \
-        printk("sadge\n");                                                     \
-      }                                                                        \
     } while (x);                                                               \
   } while (0)
 

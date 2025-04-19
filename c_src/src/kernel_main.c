@@ -4,6 +4,9 @@
 
 extern void init_IDT(void);
 extern void do_PIC(void);
+extern void IRQ_set_mask(uint8_t IRQline);
+extern volatile uint32_t isr_flag;
+extern void isr_common_handler(int isr_flag);
 
 void kernel_main() {
 
@@ -17,21 +20,11 @@ void kernel_main() {
 
   init_IDT();
   do_PIC();
-
-  printk("nugget\n");
-
-  __asm__("int $12"); // Breakpoint interrupt (doesnt seem to do anything)
-  printk("nugget 12\n");
-  __asm__("int $15"); // Breakpoint interrupt (doesnt seem to do anything)
-  printk("nugget 15\n");
-  __asm__("int $220"); // Breakpoint interrupt (doesnt seem to do anything)
-  printk("nugget 18\n");
-  __asm__("int $255"); // Breakpoint interrupt (doesnt seem to do anything)
-  printk("nugget 33\n");
-  __asm__("int $0"); // Breakpoint interrupt (doesnt seem to do anything)
-  printk("nugget 40\n");
-  __asm__("int $32"); // Breakpoint interrupt (doesnt seem to do anything)
-  printk("nugget winner\n");
+  IRQ_set_mask(0); // disable the timer
+  __asm__("sti");  // enable interrupts
 
   init_PS2();
+
+  while (1) {
+  }
 }

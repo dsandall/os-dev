@@ -14,12 +14,15 @@
 #define PIC_EOI 0x20 /* End-of-interrupt command code */
 
 void PIC_sendEOI(uint8_t irq) {
-  if (irq >= 8)
-    outb(PIC2_COMMAND, PIC_EOI);
-
-  outb(PIC1_COMMAND, PIC_EOI);
+  if (irq >= 0x20) {
+    int ext_int = irq - 0x20;
+    if (ext_int >= 8) {
+      outb(PIC2_COMMAND, PIC_EOI);
+    } else {
+      outb(PIC1_COMMAND, PIC_EOI);
+    }
+  }
 }
-void IRQ_end_of_interrupt(int irq) { PIC_sendEOI(irq); }
 
 ///////////
 // Initialization Remap

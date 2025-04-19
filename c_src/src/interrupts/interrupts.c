@@ -27,33 +27,14 @@ Interrupt_CGD_t interrupt_descriptor_table[IDT_size];
 ///////////////////////////////////////
 /// The actual handler
 ///////////////////////////////////////
-/*
-struct interrupt_frame {
-  uint64_t rip;   // "return to" address
-  uint64_t cs;    // code segment executed from
-  uint64_t flags; // interrupt vector #?
-  uint64_t rsp; // stack pointer (assuming this is used for restoring state upon
-                // return)
-  uint64_t ss;  // stack segment
-};
 
-__attribute__((interrupt)) void
-epic_interrupt_handler(struct interrupt_frame *frame) {
-
-  uint8_t int_vector = frame->flags;
-
-  // do something
-  for (size_t i = 1; i <= 4; i++) {
-    static int x;
-    x++;
-  }
-  // printk("legitness\n");
-}
-*/
+extern void PIC_sendEOI(uint8_t);
+extern void isr_driven_keyboard(void);
+void isr_common_handler(uint32_t vector);
 
 void asm_int_handler(uint16_t *ptr) {
-  uint16_t val = *ptr; // val == 0x1234
-  printk("%d\n", val);
+  uint16_t vector = *ptr;
+  isr_common_handler(vector);
 }
 
 ///////////////////////////////////////
@@ -102,3 +83,130 @@ void init_IDT(void) {
   lidt(&interrupt_descriptor_table,
        (uint16_t)(sizeof(Interrupt_CGD_t) * IDT_size) - 1);
 };
+
+void isr_common_handler(uint32_t vector) {
+
+  if (vector < 0x20) {
+    switch (vector) {
+    case 0x00:
+      printk("Divide-by-zero error\n");
+      break;
+    case 0x01:
+      printk("Debug exception\n");
+      break;
+    case 0x02:
+      printk("Non-maskable interrupt (NMI)\n");
+      break;
+    case 0x03:
+      printk("Breakpoint\n");
+      break;
+    case 0x04:
+      printk("Overflow\n");
+      break;
+    case 0x05:
+      printk("Bound range exceeded\n");
+      break;
+    case 0x06:
+      printk("Invalid opcode\n");
+      break;
+    case 0x07:
+      printk("Device not available (FPU)\n");
+      break;
+    case 0x08:
+      printk("Double fault\n");
+      break;
+    case 0x0A:
+      printk("Invalid TSS\n");
+      break;
+    case 0x0B:
+      printk("Segment not present\n");
+      break;
+    case 0x0C:
+      printk("Stack segment fault\n");
+      break;
+    case 0x0D:
+      printk("General protection fault\n");
+      break;
+    case 0x0E:
+      printk("Page fault\n");
+      break;
+    case 0x10:
+      printk("x87 FPU floating-point error\n");
+      break;
+    case 0x11:
+      printk("Alignment check\n");
+      break;
+    case 0x12:
+      printk("Machine check\n");
+      break;
+    case 0x13:
+      printk("SIMD floating-point exception\n");
+      break;
+    default:
+      printk("CPU exceptions %d\n", vector);
+      break;
+    }
+    return;
+  }
+
+  // Hardware IRQs (0x20 - 0x2F)
+  switch (vector) {
+  case 0x20:
+    // printk("Timer interrupt (IRQ0)\n");
+    break;
+  case 0x21:
+    // printk("Keyboard interrupt (IRQ1)\n");
+    isr_driven_keyboard();
+    break;
+  case 0x22:
+    printk("Cascade (IRQ2, usually unused)\n");
+    break;
+  case 0x23:
+    printk("COM2 (IRQ3)\n");
+    break;
+  case 0x24:
+    printk("COM1 (IRQ4)\n");
+    break;
+  case 0x25:
+    printk("LPT2 / floppy (IRQ5)\n");
+    break;
+  case 0x26:
+    printk("Floppy / sound card (IRQ6)\n");
+    break;
+  case 0x27:
+    printk("LPT1 / spurious (IRQ7)\n");
+    break;
+  case 0x28:
+    printk("RTC / CMOS (IRQ8)\n");
+    break;
+  case 0x29:
+    printk("ACPI / legacy SCSI (IRQ9)\n");
+    break;
+  case 0x2A:
+    printk("Unused / network / USB (IRQ10)\n");
+    break;
+  case 0x2B:
+    printk("Unused / SCSI (IRQ11)\n");
+    break;
+  case 0x2C:
+    printk("PS/2 mouse (IRQ12)\n");
+    break;
+  case 0x2D:
+    printk("FPU / coprocessor / IRQ13\n");
+    break;
+  case 0x2E:
+    printk("Primary ATA (IRQ14)\n");
+    break;
+  case 0x2F:
+    printk("Secondary ATA (IRQ15)\n");
+    break;
+  }
+
+  if (vector > 0x2F) {
+    printk("Unknown CPU exception: 0x%x\n", vector);
+    while (1) {
+    };
+  }
+
+  PIC_sendEOI(vector);
+}
