@@ -49,17 +49,6 @@ typedef union {
   } __attribute__((packed));
 } controller_configuration_byte_t;
 
-/*
-typedef union {
-  uint8_t raw;
-  struct {
-    unsigned : 4;
-    unsigned output_full_p1 : 1;
-    unsigned output_full_p2 : 1;
-    unsigned : 2;
-  } __attribute__((packed));
-} controller_output_port_t;
-*/
-
 void init_PS2();
-status_register_t print_statusreg();
+void init_PS2_8042(void);
+status_register_t get_statusreg();

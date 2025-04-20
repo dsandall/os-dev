@@ -1,9 +1,23 @@
 #include "printer.h"
+#include "freestanding.h"
+
+static printfunction pc_fn;
+void printc_fn(char c) {
+  if (pc_fn == NULL) {
+    // ERR_LOOP();
+    //  WARN: were gonna allow this for now
+  } else {
+    pc_fn(c);
+  }
+};
+
+// sets the print fn used by any future print calls
+void setPrinter(printfunction fn) { pc_fn = fn; };
 
 void print_str(const char *str) {
   while (*str != '\0') {
     // WARN: write char by char (hopefully it terminates, lol)
-    print_char((char)(*str++));
+    printc_fn((char)(*str++));
   }
 };
 
@@ -12,14 +26,14 @@ void print_hex(uint64_t num) {
   int started = 0;
 
   // Print "0x" prefix
-  print_char('0');
-  print_char('x');
+  printc_fn('0');
+  printc_fn('x');
 
   // Loop through each nibble from most significant to least
   for (int i = (sizeof(uint64_t) * 8) - 4; i >= 0; i -= 4) {
     char digit = (num >> i) & 0xF;
     if (digit || started || i == 0) {
-      print_char(hex_digits[(uint8_t)digit]);
+      printc_fn(hex_digits[(uint8_t)digit]);
       started = 1;
     }
   }
@@ -29,12 +43,12 @@ void print_unsigned(uint64_t num) {
   if (num >= 10) {
     print_unsigned(num / 10);
   }
-  print_char('0' + (num % 10));
+  printc_fn('0' + (num % 10));
 }
 
 void print_signed(uint64_t num_abs, bool is_neg) {
   if (is_neg) {
-    print_char('-');
+    printc_fn('-');
     print_unsigned(num_abs);
   } else {
     print_unsigned(num_abs);
@@ -54,7 +68,7 @@ __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...) {
   while ((c = *fmt++)) {
     switch (c) {
     default:
-      print_char(c);
+      printc_fn(c);
       break;
     case '\0':
       va_end(va);
@@ -65,7 +79,7 @@ __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...) {
 
       // we assume two % is a breakout for %
       case '%':
-        print_char('%');
+        printc_fn('%');
         break;
 
       // pointer printed as hex
@@ -80,7 +94,7 @@ __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...) {
 
       // Char
       case 'c':
-        print_char((char)va_arg(va, int));
+        printc_fn((char)va_arg(va, int));
         // char is promoted to int when used as variadic arg, must be cast back
         break;
 

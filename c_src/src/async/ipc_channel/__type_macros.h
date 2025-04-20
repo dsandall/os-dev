@@ -1,5 +1,3 @@
-#include "async.h"
-#include "freestanding.h"
 #include <stdint.h>
 
 // Define the channel type

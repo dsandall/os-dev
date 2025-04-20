@@ -1,31 +1,20 @@
 #include "vga_textbox.h"
 #include "freestanding.h"
-#include "vgalib.h"
-#include <stdint.h>
-
 #include "printer.h"
+#include "vgalib.h"
 
 // Global State
-Textbox_t *currentTextbox;
 
-extern vga_color_t vga_fg_default;
-extern vga_color_t vga_bg_default;
 extern position_t VGA_cursor;
+extern vga_char_t *VGA_ptr();
 
-void set_Textbox(Textbox_t *box) {
-  // user provides the struct that retains cursor and textbox details
-  currentTextbox = box;
-}
-
-void clear_Textbox(void) {
-
-  Textbox_t *box = currentTextbox;
+void clear_Textbox(Textbox_t *box) {
 
   for (int x = box->x_corner; x < (box->width + box->x_corner); x++) {
     VGA_cursor.x = x;
     for (int y = box->y_corner; y < (box->height + box->y_corner); y++) {
       VGA_cursor.y = y;
-      VGA_display_char(' ', VGA_DEFAULT, VGA_DEFAULT);
+      VGA_display_char(' ', box->fg, box->bg);
     }
   }
 
@@ -33,11 +22,7 @@ void clear_Textbox(void) {
   box->cursor.y = box->y_corner;
 };
 
-extern vga_char_t *VGA_ptr();
-
-void scroll_Textbox(void) {
-
-  Textbox_t *box = currentTextbox;
+void scroll_Textbox(Textbox_t *box) {
 
   for (int y = box->y_corner; y < (box->height + box->y_corner - 1); y++) {
     for (int x = box->x_corner; x < (box->width + box->x_corner); x++) {
@@ -53,21 +38,18 @@ void scroll_Textbox(void) {
   }
 }
 
-void clear_Line() {
-
-  Textbox_t *box = currentTextbox;
+void clear_Line(Textbox_t *box) {
 
   int y = box->height + box->y_corner - 1;
   for (int x = box->x_corner; x < (box->width + box->x_corner); x++) {
     VGA_cursor.y = y;
     VGA_cursor.x = x;
-    VGA_display_char(' ', VGA_DEFAULT, VGA_DEFAULT);
+    VGA_display_char(' ', box->fg, box->bg);
   }
 };
 
-void print_char(char c) {
-  Textbox_t *box = currentTextbox;
-  position_t *tc = &currentTextbox->cursor;
+void print_char_tobox(char c, Textbox_t *box) {
+  position_t *tc = &box->cursor;
 
   // Wrapping Logic
   // if (tc->y >= (box->height + box->y_corner)) {
@@ -80,10 +62,10 @@ void print_char(char c) {
   switch (c) {
   case '\n':
     tc->x = box->x_corner;
-    scroll_Textbox();
+    scroll_Textbox(box);
     tc->y = box->y_corner + box->height - 1;
 
-    clear_Line();
+    clear_Line(box);
 
     break;
   case '\r':
@@ -92,7 +74,7 @@ void print_char(char c) {
   default:
 
     VGA_cursor = *tc;
-    VGA_display_char(c, VGA_DEFAULT, VGA_DEFAULT);
+    VGA_display_char(c, box->fg, box->bg);
 
     tc->x++;
   }
@@ -100,9 +82,9 @@ void print_char(char c) {
   // Wrapping Logic
   // check bounds after updating text cursor position
   if (tc->x >= (box->width + box->x_corner)) {
-    scroll_Textbox();
+    scroll_Textbox(box);
 
-    clear_Line();
+    clear_Line(box);
     tc->x = box->x_corner;
     tc->y = box->y_corner + box->height - 1;
   }
@@ -114,28 +96,10 @@ void print_char(char c) {
 ///////////////////////////////////
 ///////////////////////////////////
 
-void VGA_printTest(void);
+static Textbox_t *def;
+void printchar_defaultHandler(char c) { print_char_tobox(c, def); }
 
-void VGA_textbox_init(Textbox_t *box) {
-  vga_bg_default = VGA_BLUE;
-  vga_fg_default = VGA_BLUE;
-
-  Textbox_t bar = {.x_corner = 0,
-                   .y_corner = VGA_HEIGHT - 3,
-                   .width = VGA_WIDTH,
-                   .height = 2,
-                   .cursor = (position_t){0, VGA_HEIGHT - 3}};
-
-  set_Textbox(&bar);
-  clear_Textbox();
-
-  vga_bg_default = VGA_DARK_GREY;
-  vga_fg_default = VGA_WHITE;
-
-  set_Textbox(box);
-  clear_Textbox();
-  VGA_printTest();
-};
+void VGA_textbox_init(Textbox_t *box) { def = box; };
 
 void VGA_printTest() {
   printk("%c\n", 'a');                 // should be "a"
@@ -147,7 +111,6 @@ void VGA_printTest() {
   printk("%d\n", INT_MIN);             // "-2147483648"
   printk("%d\n", INT_MAX);             // "2147483647"
   printk("%u\n", 0);                   // "0"
-  printk("%u\n", 4294967295);          // "4294967295"
   printk("%x\n", 0xDEADbeef);          // "deadbeef"
   printk("%p\n", (void *)UINTPTR_MAX); // "0xFFFFFFFFFFFFFFFF"
   printk("%hd\n", 0x8000);             // "-32768"

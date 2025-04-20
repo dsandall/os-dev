@@ -1,9 +1,9 @@
 #include "ps2_8042.h"
-#include "vga_textbox.h"
+#include "printer.h"
 
-status_register_t print_statusreg() {
+status_register_t get_statusreg() {
   status_register_t stat = PS2_STATUS();
-  printk("%d%d%d%d%d%d\n", stat.output_full, stat.input_full, stat.sys_flag,
+  tracek("%d%d%d%d%d%d\n", stat.output_full, stat.input_full, stat.sys_flag,
          stat.to_controller, stat.err_timeout, stat.err_parity);
 
   return stat;

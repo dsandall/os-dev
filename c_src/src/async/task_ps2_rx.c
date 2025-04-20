@@ -1,6 +1,7 @@
+#include "async.h"
 #include "channel.h"
 #include "freestanding.h"
-#include "vga_textbox.h"
+#include "printer.h"
 #include "ps2_keyboard.h"
 #include <stdint.h>
 
@@ -17,7 +18,7 @@ run_result_t ps2_rx_task(void *initial_state) {
   if (channel_recv_uint8(&ps2_ipc, &out_byte)) {
     tracek("rx - %d\n", out_byte);
     // printk("channel recieved: %hx\n", recv_buf);
-    isr_driven_keyboard(out_byte, &vga_channel);
+    ps2_state_machine_driver(out_byte, &vga_channel);
     return PENDING;
   }
   return PENDING; // we want this to continue being called when it's turn on
@@ -26,6 +27,6 @@ run_result_t ps2_rx_task(void *initial_state) {
 
 // And the ISR
 ISR_void isr_on_ps2_rx() {
-  uint8_t byte = PS2_RX_wrap();
+  uint8_t byte = PS2_RX();
   channel_send_uint8(&ps2_ipc, byte);
 }

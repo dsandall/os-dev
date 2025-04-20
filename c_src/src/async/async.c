@@ -1,16 +1,19 @@
 #include "async.h"
 #include "freestanding.h"
-#include "vga_textbox.h"
+#include "printer.h"
 
 task_t tasks[MAX_TASKS];
 int task_count = 0;
 
 void spawn_task(run_fn_t poll, void *state, run_fn_t init_fn) {
+
   // if there is a free task //WARN: (dead tasks occupy space)
   if (task_count < MAX_TASKS) {
     // then increment the tasks, and initialize with
     // your function and state pointers
-    tasks[task_count++] = (task_t){.run = poll, .state = state, .dead = 0};
+
+    if (poll != NULL)
+      tasks[task_count++] = (task_t){.run = poll, .state = state, .dead = 0};
 
     if (init_fn != NULL)
       init_fn(state);

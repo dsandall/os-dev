@@ -3,6 +3,7 @@
 
 #include "channel.h"
 #include "freestanding.h"
+#include "ps2_8042.h"
 
 // Basic Set 2 scancode to ASCII (partial for demonstration)
 static const char scancode_set2_ascii[128] = {
@@ -25,9 +26,7 @@ static const char scancode_set2_ascii[128] = {
 
 void init_PS2();
 
-void isr_driven_keyboard(uint8_t rx_byte,
-                         ipc_channel_uint16_t *isr_driven_keyboard);
-
-uint8_t PS2_RX_wrap();
+void ps2_state_machine_driver(uint8_t rx_byte,
+                              ipc_channel_uint16_t *isr_driven_keyboard);
 
 #endif // PS2_KEYBOARD_H

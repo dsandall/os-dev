@@ -2,11 +2,9 @@
 #include "channel.h"
 #include "freestanding.h"
 #include "keyboard_scancodes.h"
-#include "vga_textbox.h"
-#include "ps2_8042.h"
+#include "printer.h"
 #include <stdint.h>
 
-extern void init_PS2_8042(void);
 void init_PS2_keyboard(void);
 
 typedef union {
@@ -33,51 +31,34 @@ uint8_t lazytx(uint8_t tx) {
 
 void init_PS2_keyboard() {
 
-  //__asm__("int $3");
-
   if (lazytx(0xFF) != 0xFA) {
-    asm("hlt");
+    ERR_LOOP();
   } else if (PS2_RX() != 0xAA) {
-    asm("hlt");
+    ERR_LOOP();
   }
 
-  //  // test echo
-  //  if (lazytx(0xEE) != 0xEE) {
-  //    asm("hlt");
-  //  }
-
-  //__asm__("int $3");
+  // test echo
+  if (lazytx(0xEE) != 0xEE)
+    ERR_LOOP();
 
   POLL_STATUS_WHILE(stat.input_full);
   PS2_TX(0xF0);
   POLL_STATUS_WHILE(stat.input_full);
   PS2_TX(0x02);
   POLL_STATUS_WHILE(!stat.output_full);
-  if (PS2_RX() != 0xFA) {
-    asm("hlt");
-  }
 
-  //__asm__("int $3");
+  if (PS2_RX() != 0xFA)
+    ERR_LOOP();
 
   // enable it
-  if (lazytx(0xF4) != 0xFA) {
-    asm("hlt");
-  }
+  if (lazytx(0xF4) != 0xFA)
+    ERR_LOOP();
 
-  print_statusreg();
+  get_statusreg();
 };
 
-// isr_rx:
-//  if keeb: read ps2 port byte
-//  set flag:
-
-uint8_t PS2_RX_wrap() {
-  uint8_t rx = PS2_RX();
-  return rx;
-}
-
-void isr_driven_keyboard(uint8_t rx_byte,
-                         ipc_channel_uint16_t *text_out_channel) {
+void ps2_state_machine_driver(uint8_t rx_byte,
+                              ipc_channel_uint16_t *text_out_channel) {
 
   // rx in chunks of make,
   // break make,

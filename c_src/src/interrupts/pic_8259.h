@@ -9,4 +9,5 @@ uint16_t PIC_get_mask(void);
 void do_PIC(void);
 
 ISR_void PIC_common_handler(uint32_t vector);
+
 #endif

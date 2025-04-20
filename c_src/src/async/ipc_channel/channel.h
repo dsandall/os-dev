@@ -2,9 +2,8 @@
 #define CHANNEL_H
 
 #include "__type_macros.h"
-#include "async.h"
 #include "freestanding.h"
-#include "vga_textbox.h"
+#include "printer.h"
 
 ////////////////////////////////////////
 ////////////////////////////////////////
