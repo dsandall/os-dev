@@ -9,6 +9,7 @@ break main
 break init_PS2
 break long_mode_start
 break kernel_main
+break channel_recv_uint8
 
 disable
 

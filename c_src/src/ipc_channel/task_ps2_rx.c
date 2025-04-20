@@ -4,6 +4,8 @@
 #include "ps2_keyboard.h"
 #include <stdint.h>
 
+extern ipc_channel_uint8_t vga_channel;
+
 // Allocating for the task (should only be spawned once):
 // - 1 channel (from IRQ PS2 -> this Task)
 // - 1 byte rx buffer
@@ -22,7 +24,7 @@ run_result_t ps2_rx_task(void *initial_state) {
   uint8_t out_byte;
   if (channel_recv_interrupt_safe(ps2_ts.ch, &out_byte)) {
     // printk("channel recieved: %hx\n", recv_buf);
-    isr_driven_keyboard(out_byte);
+    isr_driven_keyboard(out_byte, (void *)&vga_channel);
     return PENDING;
   }
   return PENDING; // we want this to continue being called when it's turn on

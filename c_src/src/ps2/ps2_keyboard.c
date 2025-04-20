@@ -1,4 +1,6 @@
 #include "ps2_keyboard.h"
+#include "channel.h"
+#include "freestanding.h"
 #include "keyboard_scancodes.h"
 #include "printlib.h"
 #include "ps2_8042.h"
@@ -28,60 +30,6 @@ uint8_t lazytx(uint8_t tx) {
   POLL_STATUS_WHILE(!stat.output_full);
   return PS2_RX();
 }
-
-// volatile int int_rx_flag;
-// #d ef in e BLOCK_FOR_NEWSCAN() \
-//  do { \
-//    do { \
-//      rx = PS2_RX(); \
-//    } while (!int_rx_flag); \
-//    /*check and clear flag*/ \
-//    int_rx_flag = 0; \
-//    oldrx = rx; \
-//  } while (0)
-//
-// void bad_poll_for_keys() {
-//   POLL_STATUS_WHILE((!stat.output_full));
-//
-//   uint8_t rx = PS2_RX();
-//   uint8_t oldrx = ~rx;
-//
-//   while (1) {
-//
-//     BLOCK_FOR_NEWSCAN();
-//
-//     // rx in chunks of make,
-//     // break make,
-//     // or extended make
-//     // or extended + break + make
-//
-//     if (rx == SC2_BREAK) {
-//       // break make
-//       BLOCK_FOR_NEWSCAN();
-//       // printk("release %hx, %c\n", rx, scancode_ascii_map[rx]);
-//     } else if (rx == SC2_EXTENDED) {
-//       // ext (break?) make
-//       BLOCK_FOR_NEWSCAN();
-//
-//       if (rx == SC2_BREAK) {
-//         // ext break make
-//         BLOCK_FOR_NEWSCAN();
-//         // printk("release (ext) %hx\n", rx);
-//       } else {
-//         // ext make
-//         // printk("press (ext) %hx\n", rx);
-//         printk("%hx", rx);
-//       }
-//
-//     } else {
-//       // single make
-//       // printk("press %hx, %c\n", rx, scancode_ascii_map[rx]);
-//       printk("%c", scancode_ascii_map[rx]);
-//     }
-//
-//     //__asm__("int $3"); // Breakpoint interrupt (crashes system)
-//   }
-// }
 
 void init_PS2_keyboard() {
 
@@ -128,7 +76,8 @@ uint8_t PS2_RX_wrap() {
   return rx;
 }
 
-void isr_driven_keyboard(uint8_t rx_byte) {
+void isr_driven_keyboard(uint8_t rx_byte,
+                         ipc_channel_uint8_t *text_out_channel) {
 
   // rx in chunks of make,
   // break make,
@@ -161,7 +110,13 @@ void isr_driven_keyboard(uint8_t rx_byte) {
       printk("extBRK not handled\n");
       state = BLANK;
     } else if (state == BLANK) {
-      printk("%c", scancode_ascii_map[rx_byte]);
+
+      uint8_t key_tx = scancode_ascii_map[rx_byte];
+      bool ret = channel_send_uint8(text_out_channel, key_tx);
+      if (ret == false) {
+        ERR_LOOP();
+      }
+      // printk("%c", scancode_ascii_map[rx_byte]);
       state = BLANK;
     }
     break;

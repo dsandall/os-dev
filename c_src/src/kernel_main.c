@@ -7,6 +7,7 @@
 extern void init_IDT(void);
 
 extern run_result_t ps2_rx_task(void *s);
+extern run_result_t vga_task(void *initial_state);
 
 void kernel_main() {
 
@@ -28,7 +29,7 @@ void kernel_main() {
 
   // now ps2 is set up and you should be rxing keeb interrupts
   spawn_task(ps2_rx_task, NULL);
-  // spawn_task(ps2_rx_task, NULL);
+  spawn_task(vga_task, NULL);
 
   // Prepare to enter the matrix (by that I mean the async polling system)
   tracek("enabling interrupts with asm STI \n");
