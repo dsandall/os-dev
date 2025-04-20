@@ -11,4 +11,5 @@
 -Isrc/ps2
 -Isrc/interrupts
 -Isrc/async
+-Isrc/serial
 -Isrc/async/ipc_channel

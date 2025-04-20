@@ -3,7 +3,8 @@
 #include "printer.h"
 #include "vga_textbox.h"
 
-CREATE_IPC_CHANNEL_INSTANCE(vga_channel, ipc_channel_uint16, VGA_CHANNEL_SIZE);
+CREATE_IPC_CHANNEL_INSTANCE(vga_channel, ipc_channel_uint16,
+                            UINT16_CHANNEL_SIZE);
 
 // Allocating for the task (should only be spawned once):
 // - 1 channel (from PS2_rx -> this task, the vga buffer)

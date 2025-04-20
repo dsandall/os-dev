@@ -13,12 +13,12 @@
 ////////////////////////////////////////
 ////////////////////////////////////////
 
-#define PS2_CHANNEL_SIZE 16
-#define VGA_CHANNEL_SIZE 32
+#define UINT8_CHANNEL_SIZE 16
+#define UINT16_CHANNEL_SIZE 32
 
 // defining  the ipc_channels
-DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint8, uint8_t, PS2_CHANNEL_SIZE);
-DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint16, uint16_t, VGA_CHANNEL_SIZE);
+DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint8, uint8_t, UINT8_CHANNEL_SIZE);
+DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint16, uint16_t, UINT16_CHANNEL_SIZE);
 
 // allocating the ipc_channels (done in each task)
 
@@ -56,6 +56,17 @@ DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint16, uint16_t, VGA_CHANNEL_SIZE);
     }                                                                          \
     *out = ch->buffer[ch->tail];                                               \
     ch->tail = (ch->tail + 1) % ch->capacity;                                  \
+    ASM_STI();                                                                 \
+    return true;                                                               \
+  }                                                                            \
+  static inline bool channel_peek_##type(ipc_channel_##type##_t *ch,           \
+                                         type##_t *out) {                      \
+    ASM_CLI();                                                                 \
+    if (ch->tail == ch->head) {                                                \
+      ASM_STI();                                                               \
+      return false;                                                            \
+    }                                                                          \
+    *out = ch->buffer[ch->tail];                                               \
     ASM_STI();                                                                 \
     return true;                                                               \
   }

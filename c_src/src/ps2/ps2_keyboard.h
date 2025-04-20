@@ -27,6 +27,6 @@ static const char scancode_set2_ascii[128] = {
 void init_PS2();
 
 void ps2_state_machine_driver(uint8_t rx_byte,
-                              ipc_channel_uint16_t *isr_driven_keyboard);
+                              ipc_channel_uint8_t *isr_driven_keyboard);
 
 #endif // PS2_KEYBOARD_H

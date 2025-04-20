@@ -34,8 +34,8 @@ build_fat_img:
 	qemu-system-x86_64 \
 		-drive format=raw,file=build/fat32.img\
 		-S -s\
-		-d int,cpu_reset \
 		-serial stdio
+		#-d int,cpu_reset \
 
 link: boot
 	@printf "$(LINK) Linking into kernel.bin...\n"

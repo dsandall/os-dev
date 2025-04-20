@@ -27,10 +27,6 @@ ISR_void asm_int_handler(uint16_t *ptr) {
   }
 }
 
-////////////////////////////////////
-extern void isr_on_ps2_rx();
-////////////////////////////////////
-
 void exception_handler(uint32_t vector) {
   switch (vector) {
   case 0x00:

@@ -14,6 +14,8 @@
 ISR_void isr_on_ps2_rx();
 void PIC_sendEOI(uint8_t irq);
 
+extern void isr_on_hw_serial();
+
 ISR_void PIC_common_handler(uint32_t vector) {
   switch (vector) {
   case 0x20:
@@ -30,8 +32,9 @@ ISR_void PIC_common_handler(uint32_t vector) {
     printk("COM2 (IRQ3)\n");
     ERR_LOOP();
   case 0x24:
-    printk("COM1 (IRQ4)\n");
-    ERR_LOOP();
+    // printk("COM1 (IRQ4)\n");
+    isr_on_hw_serial();
+    break;
   case 0x25:
     printk("LPT2 / floppy (IRQ5)\n");
     ERR_LOOP();
