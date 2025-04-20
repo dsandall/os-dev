@@ -2,6 +2,7 @@
 #define PRINTLIB_H
 
 #include "freestanding.h"
+#include "vgalib.h"
 
 typedef struct {
   int x_corner;
@@ -9,11 +10,11 @@ typedef struct {
   int height;
   int width;
   position_t cursor;
+  vga_color_t bg;
+  vga_color_t fg;
 } Textbox_t;
 
-void Text_write_in(char c);
-
-void set_Textbox(Textbox_t *box);
+void VGA_textbox_init(Textbox_t *box);
 
 __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...);
 
@@ -45,7 +46,5 @@ __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...);
     tracek("disabling interrupts\n");                                          \
     __asm__("cli");                                                            \
   } while (0)
-
-void VGA_printTest(Textbox_t *box);
 
 #endif

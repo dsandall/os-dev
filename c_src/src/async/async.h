@@ -17,6 +17,6 @@ extern task_t tasks[MAX_TASKS];
 extern int task_count;
 
 void run_tasks(void);
-void spawn_task(run_fn_t run_func, void *state);
+void spawn_task(run_fn_t poll, void *state, run_fn_t init_fn);
 
 #endif

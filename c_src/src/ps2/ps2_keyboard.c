@@ -2,7 +2,7 @@
 #include "channel.h"
 #include "freestanding.h"
 #include "keyboard_scancodes.h"
-#include "printlib.h"
+#include "vga_textbox.h"
 #include "ps2_8042.h"
 #include <stdint.h>
 

@@ -4,7 +4,7 @@
 #include "__type_macros.h"
 #include "async.h"
 #include "freestanding.h"
-#include "printlib.h"
+#include "vga_textbox.h"
 
 ////////////////////////////////////////
 ////////////////////////////////////////

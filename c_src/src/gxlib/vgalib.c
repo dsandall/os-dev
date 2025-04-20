@@ -8,8 +8,8 @@
 // vga_base + y * VGA_WIDTH + x;
 
 position_t VGA_cursor;
-uint8_t vga_bg_default = VGA_DARK_GREY;
-uint8_t vga_fg_default = VGA_BRIGHT_PURPLE;
+vga_color_t vga_bg_default = VGA_DARK_GREY;
+vga_color_t vga_fg_default = VGA_BRIGHT_PURPLE;
 
 vga_char_t *VGA_ptr() {
   // where 0,0 is top right
@@ -26,19 +26,12 @@ void VGA_display_char(char c, uint8_t fg, uint8_t bg) {
   *VGA_ptr() = vga_code;
 };
 
-vga_char_t VGA_get_char(void) {
-  // use given, or default to existing
-  vga_char_t c;
-  c = *VGA_ptr();
-  return c;
-};
-
-void VGA_clear(void) {
-  for (int x = 0; x < VGA_WIDTH; x++) {
-    VGA_cursor.x = x;
-    for (int y = 0; y < VGA_HEIGHT; y++) {
-      VGA_cursor.y = y;
-      VGA_display_char('.', VGA_BLACK, VGA_BLACK);
-    }
-  }
-};
+// void VGA_clear(void) {
+//   for (int x = 0; x < VGA_WIDTH; x++) {
+//     VGA_cursor.x = x;
+//     for (int y = 0; y < VGA_HEIGHT; y++) {
+//       VGA_cursor.y = y;
+//       VGA_display_char('.', VGA_BLACK, VGA_BLACK);
+//     }
+//   }
+// };

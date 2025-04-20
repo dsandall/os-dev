@@ -1,6 +1,6 @@
 #include "channel.h"
 #include "freestanding.h"
-#include "printlib.h"
+#include "vga_textbox.h"
 #include "ps2_keyboard.h"
 #include <stdint.h>
 

@@ -1,5 +1,5 @@
 #include "ps2_8042.h"
-#include "printlib.h"
+#include "vga_textbox.h"
 
 status_register_t print_statusreg() {
   status_register_t stat = PS2_STATUS();
