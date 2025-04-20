@@ -27,9 +27,9 @@
 // Recieving from an uncooperative source:
 // Call recieve, but block interrupts while you access the shared memory
 //
-bool channel_recv_interrupt_safe(ipc_channel_uint8_t *ch, uint8_t *out_byte) {
-  __asm__("cli");
-  bool ret = channel_recv_uint8(ch, out_byte);
-  __asm__("sti");
-  return ret;
-}
+// bool channel_recv_interrupt_safe(ipc_channel_ *ch, uint8_t *out_byte) {
+//  __asm__("cli");
+//  bool ret = channel_recv_uint8(ch, out_byte);
+//  __asm__("sti");
+//  return ret;
+//}

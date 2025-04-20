@@ -20,11 +20,11 @@ void kernel_main() {
   VGA_printTest(&box);
 
   init_IDT();
-  tracek("IDT initialized");
+  debugk("IDT initialized");
   do_PIC();
-  tracek("PIC initialized");
+  debugk("PIC initialized");
   PIC_set_mask(0); // disable the timer
-  tracek("masked the timer");
+  debugk("masked the timer");
   init_PS2();
 
   // now ps2 is set up and you should be rxing keeb interrupts
@@ -32,8 +32,7 @@ void kernel_main() {
   spawn_task(vga_task, NULL);
 
   // Prepare to enter the matrix (by that I mean the async polling system)
-  tracek("enabling interrupts with asm STI \n");
-  __asm__("sti"); // enable interrupts // WARN:
+  ASM_STI(); // enable interrupts // WARN:
 
   while (1) {
     run_tasks();

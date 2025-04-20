@@ -77,7 +77,7 @@ uint8_t PS2_RX_wrap() {
 }
 
 void isr_driven_keyboard(uint8_t rx_byte,
-                         ipc_channel_uint8_t *text_out_channel) {
+                         ipc_channel_uint16_t *text_out_channel) {
 
   // rx in chunks of make,
   // break make,
@@ -111,8 +111,8 @@ void isr_driven_keyboard(uint8_t rx_byte,
       state = BLANK;
     } else if (state == BLANK) {
 
-      uint8_t key_tx = scancode_ascii_map[rx_byte];
-      bool ret = channel_send_uint8(text_out_channel, key_tx);
+      uint16_t key_tx = scancode_ascii_map[rx_byte];
+      bool ret = channel_send_uint16(text_out_channel, key_tx);
       if (ret == false) {
         ERR_LOOP();
       }

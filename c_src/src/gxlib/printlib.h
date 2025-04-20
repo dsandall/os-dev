@@ -1,3 +1,6 @@
+#ifndef PRINTLIB_H
+#define PRINTLIB_H
+
 #include "freestanding.h"
 
 typedef struct {
@@ -23,7 +26,7 @@ __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...);
 #define debugk(...) // Do nothing
 #endif              // ENABLE_DEBUG
 
-#define ENABLE_TRACE 1
+#define ENABLE_TRACE 0
 #if ENABLE_TRACE
 #define tracek(fmt, ...) printk("TRC - " fmt, ##__VA_ARGS__)
 
@@ -33,7 +36,7 @@ __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...);
 
 #define ASM_STI()                                                              \
   do {                                                                         \
-    tracek("enablink interrupts\n");                                           \
+    tracek("enabling interrupts\n");                                           \
     __asm__("sti");                                                            \
   } while (0)
 
@@ -44,3 +47,5 @@ __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...);
   } while (0)
 
 void VGA_printTest(Textbox_t *box);
+
+#endif
