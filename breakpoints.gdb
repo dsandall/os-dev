@@ -10,5 +10,7 @@ break init_PS2
 break long_mode_start
 break kernel_main
 
+disable
+
 
 

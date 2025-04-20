@@ -8,6 +8,69 @@
 #define PIC2_DATA (PIC2 + 1)
 
 ///////////
+// Interrupt Handling
+///////////
+
+ISR_void isr_on_ps2_rx();
+void PIC_sendEOI(uint8_t irq);
+
+ISR_void PIC_common_handler(uint32_t vector) {
+  switch (vector) {
+  case 0x20:
+    // printk("Timer interrupt (IRQ0)\n");
+    break;
+  case 0x21:
+    // printk("Keyboard interrupt (IRQ1)\n");
+    isr_on_ps2_rx();
+    break;
+  case 0x22:
+    printk("Cascade (IRQ2, usually unused)\n");
+    ERR_LOOP();
+  case 0x23:
+    printk("COM2 (IRQ3)\n");
+    ERR_LOOP();
+  case 0x24:
+    printk("COM1 (IRQ4)\n");
+    ERR_LOOP();
+  case 0x25:
+    printk("LPT2 / floppy (IRQ5)\n");
+    ERR_LOOP();
+  case 0x26:
+    printk("Floppy / sound card (IRQ6)\n");
+    ERR_LOOP();
+  case 0x27:
+    printk("LPT1 / spurious (IRQ7)\n");
+    ERR_LOOP();
+  case 0x28:
+    printk("RTC / CMOS (IRQ8)\n");
+    ERR_LOOP();
+  case 0x29:
+    printk("ACPI / legacy SCSI (IRQ9)\n");
+    ERR_LOOP();
+  case 0x2A:
+    printk("Unused / network / USB (IRQ10)\n");
+    ERR_LOOP();
+  case 0x2B:
+    printk("Unused / SCSI (IRQ11)\n");
+    ERR_LOOP();
+  case 0x2C:
+    printk("PS/2 mouse (IRQ12)\n");
+    ERR_LOOP();
+  case 0x2D:
+    printk("FPU / coprocessor / IRQ13\n");
+    ERR_LOOP();
+  case 0x2E:
+    printk("Primary ATA (IRQ14)\n");
+    ERR_LOOP();
+  case 0x2F:
+    printk("Secondary ATA (IRQ15)\n");
+    ERR_LOOP();
+  }
+  PIC_sendEOI(vector);
+  return;
+}
+
+///////////
 // Interrupt Acking
 ///////////
 
@@ -84,35 +147,35 @@ void PIC_remap(int offset1, int offset2) {
  * setting the mask on a higher request line will not affect a lower line.
  * Masking IRQ2 will cause the Slave PIC to stop raising IRQs.
  */
-void IRQ_set_mask(uint8_t IRQline) {
+void PIC_set_mask(uint8_t PICline) {
   uint16_t port;
   uint8_t value;
 
-  if (IRQline < 8) {
+  if (PICline < 8) {
     port = PIC1_DATA;
   } else {
     port = PIC2_DATA;
-    IRQline -= 8;
+    PICline -= 8;
   }
-  value = inb(port) | (1 << IRQline);
+  value = inb(port) | (1 << PICline);
   outb(port, value);
 }
 
-void IRQ_clear_mask(uint8_t IRQline) {
+void PIC_clear_mask(uint8_t PICline) {
   uint16_t port;
   uint8_t value;
 
-  if (IRQline < 8) {
+  if (PICline < 8) {
     port = PIC1_DATA;
   } else {
     port = PIC2_DATA;
-    IRQline -= 8;
+    PICline -= 8;
   }
-  value = inb(port) & ~(1 << IRQline);
+  value = inb(port) & ~(1 << PICline);
   outb(port, value);
 }
 
-uint16_t IRQ_get_mask(void) {
+uint16_t PIC_get_mask(void) {
   return (uint16_t)(inb(PIC1_DATA) << 8 | inb(PIC2_DATA));
 }
 
@@ -147,30 +210,16 @@ uint16_t pic_get_irr(void) { return __pic_get_irq_reg(PIC_READ_IRR); }
 /* Returns the combined value of the cascaded PICs in-service register */
 uint16_t pic_get_isr(void) { return __pic_get_irq_reg(PIC_READ_ISR); }
 
-///////////////
-// testing
-///////////////
-
-void my_timer_handler(int irq, int err, void *arg) {
-  (void)err; // probably unused for timer IRQ
-  int *counter = (int *)arg;
-  printk("hello from timer interrupt\n");
-  (*counter)++;
-}
-
-int ticks = 0;
-// IRQ_set_handler(32, my_timer_handler, &ticks); // IRQ 32 = PIT timer
-
 void do_PIC(void) {
 
   // remap to 0x20-0x2F
   PIC_remap(0x20, 0x28);
 
-  printk("mask is %x\n", IRQ_get_mask());
+  printk("mask is %x\n", PIC_get_mask());
   // Unmask both PICs.
   outb(PIC1_DATA, 0);
   outb(PIC2_DATA, 0);
-  printk("mask is %x\n", IRQ_get_mask());
+  printk("mask is %x\n", PIC_get_mask());
 
   printk("irr is %hx\n", pic_get_irr());
   printk("isr is %hx\n", pic_get_isr());

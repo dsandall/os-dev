@@ -1,3 +1,8 @@
+#ifndef PS2_KEYBOARD_H
+#define PS2_KEYBOARD_H
+
+#include "freestanding.h"
+
 // Basic Set 2 scancode to ASCII (partial for demonstration)
 static const char scancode_set2_ascii[128] = {
     [0x1C] = 'A',  [0x32] = 'B',  [0x21] = 'C', [0x23] = 'D',  [0x24] = 'E',
@@ -18,3 +23,9 @@ static const char scancode_set2_ascii[128] = {
 };
 
 void init_PS2();
+
+void isr_driven_keyboard(uint8_t rx_byte);
+
+uint8_t PS2_RX_wrap();
+
+#endif // PS2_KEYBOARD_H

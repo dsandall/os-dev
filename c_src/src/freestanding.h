@@ -13,6 +13,8 @@
 //   #include <stdnoreturn.h>
 //
 
+typedef void ISR_void;
+
 typedef struct position {
   int x;
   int y;

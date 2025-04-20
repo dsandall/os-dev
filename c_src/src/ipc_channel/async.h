@@ -1,13 +1,14 @@
 #ifndef ASYNC_H
 #define ASYNC_H
 
-typedef enum { PENDING = 0, READY = 1 } poll_result_t;
+typedef enum { PENDING = 0, READY = 1 } run_result_t; // returned by poll_fn_t
 
-typedef poll_result_t (*poll_fn_t)(void *state);
+typedef run_result_t (*run_fn_t)(
+    void *state); // poll_fn_t: represents a single task that returns a result
 
 typedef struct {
-  poll_fn_t poll;
-  void *state;
+  run_fn_t run; // the task
+  void *state;  // some task specific shared state pointer
   int completed;
 } task_t;
 
@@ -16,6 +17,6 @@ extern task_t tasks[MAX_TASKS];
 extern int task_count;
 
 void run_tasks(void);
-void spawn_task(poll_fn_t poll, void *state);
+void spawn_task(run_fn_t run_func, void *state);
 
 #endif

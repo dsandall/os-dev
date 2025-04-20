@@ -1,13 +1,12 @@
+#include "async.h"
 #include "interrupts.h"
+#include "pic_8259.h"
 #include "printlib.h"
 #include "ps2_keyboard.h"
 
 extern void init_IDT(void);
-extern void do_PIC(void);
-extern void IRQ_set_mask(uint8_t IRQline);
-extern volatile uint32_t isr_flag;
-extern void isr_common_handler(int isr_flag);
-extern int async_main(void);
+
+extern run_result_t ps2_rx_task(void *s);
 
 void kernel_main() {
 
@@ -20,11 +19,21 @@ void kernel_main() {
   VGA_printTest(&box);
 
   init_IDT();
+  tracek("IDT initialized");
   do_PIC();
-  IRQ_set_mask(0); // disable the timer
+  tracek("PIC initialized");
+  PIC_set_mask(0); // disable the timer
+  tracek("masked the timer");
   init_PS2();
 
   // now ps2 is set up and you should be rxing keeb interrupts
+  spawn_task(ps2_rx_task, NULL);
 
-  async_main();
+  // Prepare to enter the matrix (by that I mean the async polling system)
+  tracek("enabling interrupts with asm STI \n");
+  __asm__("sti"); // enable interrupts // WARN:
+
+  while (1) {
+    run_tasks();
+  }
 }

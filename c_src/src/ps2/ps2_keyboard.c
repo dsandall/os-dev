@@ -1,10 +1,10 @@
 #include "ps2_keyboard.h"
 #include "keyboard_scancodes.h"
+#include "printlib.h"
 #include "ps2_8042.h"
 #include <stdint.h>
 
 extern void init_PS2_8042(void);
-extern void printk(const char *fmt, ...);
 void init_PS2_keyboard(void);
 
 typedef union {
@@ -19,6 +19,7 @@ typedef union {
 void init_PS2() {
   init_PS2_8042();
   init_PS2_keyboard();
+  tracek("keyboard initialization complete\n");
 };
 
 uint8_t lazytx(uint8_t tx) {
@@ -135,7 +136,6 @@ void isr_driven_keyboard(uint8_t rx_byte) {
   // or extended + break + make
   static enum { BLANK, BRK, EXT, EXTBRK } state;
 
-  printk("thebuggg \n");
   switch (rx_byte) {
   case SC2_BREAK:
     if (state == EXT) {
@@ -150,18 +150,18 @@ void isr_driven_keyboard(uint8_t rx_byte) {
     break;
   default:
     // case "make":
-    printk("state: %d\n", state);
+    // printk("state: %d\n", state);
     if (state == EXT) {
-      printk("ext not handled\n");
+      // printk("ext not handled\n");
       state = BLANK;
     } else if (state == BRK) {
-      printk("releasing %c\n", scancode_ascii_map[rx_byte]);
+      // printk("releasing %c\n", scancode_ascii_map[rx_byte]);
       state = BLANK;
     } else if (state == EXTBRK) {
       printk("extBRK not handled\n");
       state = BLANK;
     } else if (state == BLANK) {
-      printk("blnk: %c\n", scancode_ascii_map[rx_byte]);
+      printk("%c", scancode_ascii_map[rx_byte]);
       state = BLANK;
     }
     break;
