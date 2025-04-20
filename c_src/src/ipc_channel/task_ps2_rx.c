@@ -4,18 +4,25 @@
 #include "ps2_keyboard.h"
 #include <stdint.h>
 
-ipc_channel_t chan = {0};
+// Allocating for the task (should only be spawned once):
+// - 1 channel (from IRQ PS2 -> this Task)
+// - 1 byte rx buffer
 
-uint8_t recv_buf = 0;
-int wake_flags[MAX_TASKS] = {0};
+typedef ipc_channel_uint8_t ps2_chan_t;
+typedef struct {
+  ps2_chan_t *ch;
+} ps2_taskstate_t;
 
-run_result_t ps2_rx_task(void *s) {
-  static recv_state_t recv_state = {
-      .ch = &chan, .out_byte = &recv_buf, .wake_flag = &wake_flags[0]};
+CREATE_IPC_CHANNEL(ps2_ipc, ipc_channel_uint8, 16);
 
-  if (channel_recv_interrupt_safe(recv_state.ch, recv_state.out_byte)) {
+ps2_taskstate_t ps2_ts = {.ch = &ps2_ipc};
+
+run_result_t ps2_rx_task(void *initial_state) {
+
+  uint8_t out_byte;
+  if (channel_recv_interrupt_safe(ps2_ts.ch, &out_byte)) {
     // printk("channel recieved: %hx\n", recv_buf);
-    isr_driven_keyboard(recv_buf);
+    isr_driven_keyboard(out_byte);
     return PENDING;
   }
   return PENDING; // we want this to continue being called when it's turn on
@@ -23,9 +30,7 @@ run_result_t ps2_rx_task(void *s) {
 }
 
 // And the ISR
-
 ISR_void isr_on_ps2_rx() {
   uint8_t byte = PS2_RX_wrap();
-  channel_send(&chan, byte);
-  wake_flags[0] = 1; // wake task 0
+  channel_send_uint8(ps2_ts.ch, byte);
 }

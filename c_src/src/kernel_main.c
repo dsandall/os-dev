@@ -28,6 +28,7 @@ void kernel_main() {
 
   // now ps2 is set up and you should be rxing keeb interrupts
   spawn_task(ps2_rx_task, NULL);
+  // spawn_task(ps2_rx_task, NULL);
 
   // Prepare to enter the matrix (by that I mean the async polling system)
   tracek("enabling interrupts with asm STI \n");
