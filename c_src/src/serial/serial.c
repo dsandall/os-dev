@@ -5,15 +5,15 @@
 #include <stdint.h>
 
 // pointer to IPC rx channel
-static ipc_channel_uint8_t *serial_ipc_recv;
+static ipc_channel_uint16_t *serial_ipc_src;
 
 // Print func wrapper for the printer library
 /// Queues data to be written to the serial port (non-blocking).
-void SER_printc(char c) { channel_send_uint8(serial_ipc_recv, (uint8_t)c); };
+void SER_printc(char c) { channel_send_uint16(serial_ipc_src, c); };
 
 /// Initializes COM1 and prepares the serial output driver.
 /// Should be called once during OS startup.
-void SER_init(ipc_channel_uint8_t *input_channel) {
+void SER_init(ipc_channel_uint16_t *input_channel) {
   outb(COM1_BASE + REG_IER, 0x00); // Disable all interrupts
   outb(COM1_BASE + 3, 0x80);       // Enable DLAB
   outb(COM1_BASE + 0, 0x03);       // Baud rate divisor low byte (38400)
@@ -26,32 +26,26 @@ void SER_init(ipc_channel_uint8_t *input_channel) {
   // Clear line status
   (void)inb(COM1_BASE + REG_LSR);
 
+  printk("yuh\n");
+
   // set the channel to read from
-  serial_ipc_recv = input_channel;
+  serial_ipc_src = input_channel;
+
+  printk("oh yuh:\n");
 
   // Enable THRE and Line interrupts
   outb(COM1_BASE + REG_IER, 0x03);
 };
 
-// helper funcs
-static inline bool serial_can_send(void) {
-  return (inb(COM1_BASE + REG_LSR) & REG_LSR_THRE) != 0;
-}
-// static inline void serial_hw_send(uint8_t byte) {
-//   outb(COM1_BASE + REG_DATA, byte);
-// }
-
-static bool acked_flag = false; // WARN: static state only in isr
 void serial_try_send() {
   // peek at the channel
-  uint8_t peek;
-  if (channel_peek_uint8(serial_ipc_recv, &peek)) {
+  uint16_t peek;
+  if (channel_peek_uint16(serial_ipc_src, &peek)) {
     // try to send next byte
-    if (!serial_can_send()) {
-      ERR_LOOP();
+    if ((inb(COM1_BASE + REG_LSR) & REG_LSR_THRE)) {
+      outb(COM1_BASE + REG_DATA, (uint8_t)peek);
     }
-    outb(COM1_BASE + REG_DATA, peek);
-    acked_flag = false;
+    // ERR_LOOP();
   };
 }
 
@@ -59,15 +53,10 @@ ISR_void serial_isr_handler() {
   uint8_t iir = inb(COM1_BASE + 2) & IIR_TYPE_MASK; // Get interrupt source
 
   if (iir == IIR_TX_EMPTY) {
-    acked_flag = true;
-
-    if (!serial_can_send()) {
-      ERR_LOOP();
-    }
 
     // recv the byte, send it nowhere
-    uint8_t traaash;
-    channel_recv_uint8(serial_ipc_recv, &traaash);
+    uint16_t traaash;
+    channel_recv_uint16(serial_ipc_src, &traaash);
 
     // then peek at the channel and try to send it again
     serial_try_send();
@@ -92,41 +81,7 @@ ISR_void serial_isr_handler() {
   else if (iir == 0x01) {
     // Spurious interrupt
     // Optionally log or ignore
+    ERR_LOOP();
     tracek("spurious interruptus\n");
   }
 }
-
-//// Serial Logic
-//// called by isr, or by polling
-// void serial_tx_handler(void) {
-//   static size_t pos = 0;
-//
-//   // If no message in progress, try to get one
-//   if (!current_msg) {
-//     static char temp_buf[128]; // or whatever max size you expect
-//     size_t i = 0;
-//     uint8_t byte;
-//
-//     while (i < sizeof(temp_buf) &&) {
-//       temp_buf[i++] = byte;
-//     }
-//
-//     if (i > 0) {
-//       temp_buf[i] = '\0'; // optional, if using C-string ops
-//       current_msg = temp_buf;
-//       pos = 0;
-//     }
-//   }
-//
-//   // Now send next byte
-//   if (current_msg && current_msg[pos]) {
-//     if (serial_can_send()) { // Check LSR THRE
-//       serial_hw_send(current_msg[pos++]);
-//     }
-//   }
-//
-//   // Done with message?
-//   if (current_msg && current_msg[pos] == '\0') {
-//     current_msg = NULL;
-//   }
-// }

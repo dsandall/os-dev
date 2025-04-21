@@ -3,16 +3,12 @@
 #include "printer.h"
 #include "vga_textbox.h"
 
-CREATE_IPC_CHANNEL_INSTANCE(vga_channel, ipc_channel_uint16,
-                            UINT16_CHANNEL_SIZE);
-
-// Allocating for the task (should only be spawned once):
-// - 1 channel (from PS2_rx -> this task, the vga buffer)
+CREATE_IPC_CHANNEL_INSTANCE(vga_ipc, uint16, UINT16_CHANNEL_SIZE);
 
 run_result_t vga_task(void *initial_state) {
 
   uint16_t send_to_vga;
-  if (channel_recv_uint16(&vga_channel, &send_to_vga)) {
+  if (channel_recv_uint16(&vga_ipc, &send_to_vga)) {
     printk("%c", send_to_vga);
   }
 

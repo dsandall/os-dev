@@ -55,6 +55,7 @@ void print_signed(uint64_t num_abs, bool is_neg) {
   }
 }
 
+// all "printk" ends up here
 __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...) {
 
   // %% %d %u %x %c %p %h[dux] %l[dux] %q[dux] %s

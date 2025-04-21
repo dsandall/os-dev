@@ -1,6 +1,8 @@
 #include "async.h"
 #include "freestanding.h"
 #include "printer.h"
+#include "serial.h"
+#include "vga_textbox.h"
 
 extern run_result_t ps2_rx_task(void *s);
 
@@ -26,7 +28,6 @@ void kernel_main() {
   spawn_task(ps2_rx_task, NULL, NULL);
   printk("hardware ps2 enabled, interrupts not enabled yet\n");
 
-  // enable hardware serial support
   spawn_task(hw_serial_task, NULL, hw_serial_init);
 
   // Prepare to enter the matrix (by that I mean the async polling system)

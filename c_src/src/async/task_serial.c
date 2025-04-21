@@ -5,9 +5,9 @@
 #include "serial.h"
 #include <stdint.h>
 
-// Allocating for the task (should only be spawned once):
-// - 1 channel (from PS2_rx -> this task, the vga buffer)
-CREATE_IPC_CHANNEL_INSTANCE(serial_ipc, ipc_channel_uint8, UINT8_CHANNEL_SIZE);
+CREATE_IPC_CHANNEL_INSTANCE(
+    serial_ipc, uint16,
+    UINT16_CHANNEL_SIZE); // allocating the ipc_channels (done in each task)
 
 run_result_t hw_serial_task(void *initial_state) {
   serial_try_send();
@@ -18,12 +18,13 @@ run_result_t hw_serial_init(void *initial_state) {
 
   // init hardware, setup isr handler, masks
   SER_init(&serial_ipc);
+  printk("oh yuh2:\n");
+
+  printk("wassup");
 
   // TODO: set interrupt handler (currently done at compile time)
 
-  setPrinter(SER_printc);
-
-  printk("ZYX\n");
+  // printk("ZYX\n"); // should print from serial
 
   return PENDING;
 }

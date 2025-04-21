@@ -17,7 +17,7 @@
 #define IIR_TX_EMPTY 0x02
 #define IIR_LINE_STAT 0x06
 
-void SER_init(ipc_channel_uint8_t *input_channel);
+void SER_init(ipc_channel_uint16_t *input_channel);
 
 /// Queues data to be written to the serial port (non-blocking).
 void SER_printc(char c);

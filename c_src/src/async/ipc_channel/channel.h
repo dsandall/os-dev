@@ -8,23 +8,6 @@
 ////////////////////////////////////////
 ////////////////////////////////////////
 ////////////////////////////////////////
-//// Channel Configuration Goes Here
-////////////////////////////////////////
-////////////////////////////////////////
-////////////////////////////////////////
-
-#define UINT8_CHANNEL_SIZE 16
-#define UINT16_CHANNEL_SIZE 32
-
-// defining  the ipc_channels
-DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint8, uint8_t, UINT8_CHANNEL_SIZE);
-DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint16, uint16_t, UINT16_CHANNEL_SIZE);
-
-// allocating the ipc_channels (done in each task)
-
-////////////////////////////////////////
-////////////////////////////////////////
-////////////////////////////////////////
 ///
 /// - macro to define channel functions for various types
 /// - we just assume this will be used with interrupts, better safe than sorry,
@@ -71,10 +54,24 @@ DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint16, uint16_t, UINT16_CHANNEL_SIZE);
     return true;                                                               \
   }
 
+////////////////////////////////////////
+////////////////////////////////////////
+////////////////////////////////////////
+//// Channel Configuration Goes Here
+////////////////////////////////////////
+////////////////////////////////////////
+////////////////////////////////////////
+
+#define UINT8_CHANNEL_SIZE 160
+#define UINT16_CHANNEL_SIZE 320
+
+// defining  the ipc_channels
+DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint8, uint8_t, UINT8_CHANNEL_SIZE);
+DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint16, uint16_t, UINT16_CHANNEL_SIZE);
+
+/// the funcs
 DEFINE_CHANNEL_FUNCS(uint8);
 DEFINE_CHANNEL_FUNCS(uint16);
-///
-///
-////////////////////////////////////////
-////////////////////////////////////////
+
+// the instances
 #endif
