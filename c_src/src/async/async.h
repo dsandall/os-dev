@@ -1,7 +1,11 @@
 #ifndef ASYNC_H
 #define ASYNC_H
 
-typedef enum { PENDING = 0, DEAD = 1 } run_result_t; // returned by poll_fn_t
+typedef enum {
+  PENDING = 0,
+  DEAD = 1,
+  DATA = 2
+} run_result_t; // returned by poll_fn_t
 
 typedef run_result_t (*run_fn_t)(
     void *state); // poll_fn_t: represents a single task that returns a result

@@ -1,7 +1,8 @@
 #include "printer.h"
 #include "freestanding.h"
 
-static printfunction pc_fn;
+static printfunction pc_fn = NULL;
+
 void printc_fn(char c) {
   if (pc_fn == NULL) {
     ERR_LOOP();

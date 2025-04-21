@@ -15,6 +15,12 @@ extern run_result_t hw_int_task_init(void *initial_state);
 extern run_result_t hw_serial_task(void *initial_state);
 extern run_result_t hw_serial_init(void *initial_state);
 
+extern void printchar_serialtask(char c);
+void doubleprint(char c) {
+  printchar_vgatask(c);
+  printchar_serialtask(c);
+}
+
 void kernel_main() {
 
   // vga, so we can printf
@@ -30,7 +36,13 @@ void kernel_main() {
 
   spawn_task(hw_serial_task, NULL, hw_serial_init);
 
+  printk("single print\n");
+  // setup double printing
+  setPrinter(doubleprint);
+  printk("doubleprint meeee\n");
+
   // Prepare to enter the matrix (by that I mean the async polling system)
+  RESUME(true);
   while (1) {
     run_tasks();
   }

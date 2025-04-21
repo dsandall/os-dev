@@ -1,15 +1,11 @@
 #include "serial.h"
 #include "channel.h"
 #include "freestanding.h"
-#include "printer.h"
+#include "sealib.h"
 #include <stdint.h>
 
 // pointer to IPC rx channel
 static ipc_channel_uint16_t *serial_ipc_src;
-
-// Print func wrapper for the printer library
-/// Queues data to be written to the serial port (non-blocking).
-void SER_printc(char c) { channel_send_uint16(serial_ipc_src, c); };
 
 /// Initializes COM1 and prepares the serial output driver.
 /// Should be called once during OS startup.
@@ -26,15 +22,16 @@ void SER_init(ipc_channel_uint16_t *input_channel) {
   // Clear line status
   (void)inb(COM1_BASE + REG_LSR);
 
-  printk("yuh\n");
-
   // set the channel to read from
   serial_ipc_src = input_channel;
 
-  printk("oh yuh:\n");
-
   // Enable THRE and Line interrupts
   outb(COM1_BASE + REG_IER, 0x03);
+
+  static char str[] = "Hello from serial!";
+  for (int i = 0; i < (int)strlen(str); i++) {
+    channel_send_uint16(input_channel, str[i]);
+  }
 };
 
 void serial_try_send() {
@@ -45,7 +42,7 @@ void serial_try_send() {
     if ((inb(COM1_BASE + REG_LSR) & REG_LSR_THRE)) {
       outb(COM1_BASE + REG_DATA, (uint8_t)peek);
     }
-    // ERR_LOOP();
+    // WARN: no way to know if theres a persistent error
   };
 }
 

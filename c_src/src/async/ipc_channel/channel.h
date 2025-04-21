@@ -18,39 +18,39 @@
 #define DEFINE_CHANNEL_FUNCS(type)                                             \
   static inline bool channel_send_##type(ipc_channel_##type##_t *ch,           \
                                          type##_t val) {                       \
-    ASM_CLI();                                                                 \
+    bool state = PAUSE_INT();                                                  \
     uint16_t next = (ch->head + 1) % ch->capacity;                             \
     if (next == ch->tail) {                                                    \
-      ASM_STI();                                                               \
+      RESUME(state);                                                           \
       return false;                                                            \
     }                                                                          \
     ch->buffer[ch->head] = val;                                                \
     ch->head = next;                                                           \
-    ASM_STI();                                                                 \
+    RESUME(state);                                                             \
     return true;                                                               \
   }                                                                            \
                                                                                \
   static inline bool channel_recv_##type(ipc_channel_##type##_t *ch,           \
                                          type##_t *out) {                      \
-    ASM_CLI();                                                                 \
+    bool state = PAUSE_INT();                                                  \
     if (ch->tail == ch->head) {                                                \
-      ASM_STI();                                                               \
+      RESUME(state);                                                           \
       return false;                                                            \
     }                                                                          \
     *out = ch->buffer[ch->tail];                                               \
     ch->tail = (ch->tail + 1) % ch->capacity;                                  \
-    ASM_STI();                                                                 \
+    RESUME(state);                                                             \
     return true;                                                               \
   }                                                                            \
   static inline bool channel_peek_##type(ipc_channel_##type##_t *ch,           \
                                          type##_t *out) {                      \
-    ASM_CLI();                                                                 \
+    bool state = PAUSE_INT();                                                  \
     if (ch->tail == ch->head) {                                                \
-      ASM_STI();                                                               \
+      RESUME(state);                                                           \
       return false;                                                            \
     }                                                                          \
     *out = ch->buffer[ch->tail];                                               \
-    ASM_STI();                                                                 \
+    RESUME(state);                                                             \
     return true;                                                               \
   }
 
@@ -62,8 +62,8 @@
 ////////////////////////////////////////
 ////////////////////////////////////////
 
-#define UINT8_CHANNEL_SIZE 160
-#define UINT16_CHANNEL_SIZE 320
+#define UINT8_CHANNEL_SIZE 16
+#define UINT16_CHANNEL_SIZE 32
 
 // defining  the ipc_channels
 DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint8, uint8_t, UINT8_CHANNEL_SIZE);

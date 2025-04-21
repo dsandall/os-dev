@@ -5,15 +5,27 @@
 
 CREATE_IPC_CHANNEL_INSTANCE(vga_ipc, uint16, UINT16_CHANNEL_SIZE);
 
+// VGA has one channel, and manages data into the VGA buffer
+//
+// It also supports a print handler
+
 run_result_t vga_task(void *initial_state) {
 
   uint16_t send_to_vga;
   if (channel_recv_uint16(&vga_ipc, &send_to_vga)) {
-    printk("%c", send_to_vga);
+    // printk("VGA%c", send_to_vga);
+    // WARN: ONly direct writes are enabled
   }
 
   return PENDING;
 }
+
+// pointer to a box and cursor struct
+Textbox_t *default_box;
+
+// print handler, no channel from printer - writes directly to the vga textbox
+extern void print_char_tobox(char c, Textbox_t *box);
+void printchar_vgatask(char c) { print_char_tobox(c, default_box); }
 
 run_result_t vga_task_init(void *initial_state) {
 
@@ -35,13 +47,12 @@ run_result_t vga_task_init(void *initial_state) {
                                .fg = VGA_WHITE,
                                .bg = VGA_DARK_GREY};
 
-  setPrinter((printfunction)&printchar_defaultHandler);
-  VGA_textbox_init(&bar);
+  setPrinter((printfunction)&printchar_vgatask);
 
+  default_box = &bar;
   clear_Textbox(&bar);
 
-  VGA_textbox_init(&main_box);
-
+  default_box = &main_box;
   clear_Textbox(&main_box);
 
   VGA_printTest();

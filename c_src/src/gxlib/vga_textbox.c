@@ -5,6 +5,7 @@
 
 // Global State
 
+// The other library just turns a cursor into a pointer to the vga buffer
 extern position_t VGA_cursor;
 extern vga_char_t *VGA_ptr();
 
@@ -95,11 +96,6 @@ void print_char_tobox(char c, Textbox_t *box) {
 /// The entry point, window initialization:
 ///////////////////////////////////
 ///////////////////////////////////
-
-static Textbox_t *def;
-void printchar_defaultHandler(char c) { print_char_tobox(c, def); }
-
-void VGA_textbox_init(Textbox_t *box) { def = box; };
 
 void VGA_printTest() {
   printk("%c\n", 'a');                 // should be "a"

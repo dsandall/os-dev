@@ -1,5 +1,5 @@
-#ifndef PRINTLIB_H
-#define PRINTLIB_H
+#ifndef TEXTBOX_H
+#define TEXTBOX_H
 
 #include "freestanding.h"
 #include "vgalib.h"
@@ -14,9 +14,8 @@ typedef struct {
   vga_color_t fg;
 } Textbox_t;
 
-void VGA_textbox_init(Textbox_t *box);
 void clear_Textbox(Textbox_t *box);
 void VGA_printTest();
-void printchar_defaultHandler(char c);
+void printchar_vgatask(char c);
 
 #endif

@@ -4,6 +4,7 @@
 #include "channel.h"
 #include "freestanding.h"
 #include "ps2_8042.h"
+#include <stdint.h>
 
 // Basic Set 2 scancode to ASCII (partial for demonstration)
 static const char scancode_set2_ascii[128] = {
@@ -25,8 +26,14 @@ static const char scancode_set2_ascii[128] = {
 };
 
 void init_PS2();
+typedef uint16_t keyout_t;
 
-void ps2_state_machine_driver(uint8_t rx_byte,
-                              ipc_channel_uint16_t *text_out_channel);
+#include "async.h"
+typedef struct {
+  run_result_t result;
+  keyout_t keypress;
+} keyout_result_t;
+
+keyout_result_t ps2_state_machine_driver(uint8_t rx_byte);
 
 #endif // PS2_KEYBOARD_H

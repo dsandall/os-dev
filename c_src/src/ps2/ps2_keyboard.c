@@ -1,4 +1,5 @@
 #include "ps2_keyboard.h"
+#include "async.h"
 #include "channel.h"
 #include "freestanding.h"
 #include "keyboard_scancodes.h"
@@ -57,13 +58,14 @@ void init_PS2_keyboard() {
   get_statusreg();
 };
 
-void ps2_state_machine_driver(uint8_t rx_byte,
-                              ipc_channel_uint16_t *text_out_channel) {
+keyout_result_t ps2_state_machine_driver(uint8_t rx_byte) {
 
   // rx in chunks of make,
   // break make,
   // or extended make
   // or extended + break + make
+  keyout_result_t result = {PENDING, 0};
+
   static enum { BLANK, BRK, EXT, EXTBRK } state;
 
   switch (rx_byte) {
@@ -92,14 +94,12 @@ void ps2_state_machine_driver(uint8_t rx_byte,
       state = BLANK;
     } else if (state == BLANK) {
 
-      uint16_t key_tx = scancode_ascii_map[rx_byte];
-      bool ret = channel_send_uint16(text_out_channel, key_tx);
-      if (ret == false) {
-        ERR_LOOP();
-      }
-      // printk("%c", scancode_ascii_map[rx_byte]);
+      result.keypress = scancode_ascii_map[rx_byte];
+      result.result = DATA;
       state = BLANK;
     }
     break;
   }
+
+  return result;
 }
