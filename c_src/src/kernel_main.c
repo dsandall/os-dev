@@ -21,8 +21,6 @@ void doubleprint(char c) {
   printchar_serialtask(c);
 }
 
-#include "rust_function.h"
-
 void kernel_main() {
 
   // vga, so we can printf
@@ -43,7 +41,8 @@ void kernel_main() {
   setPrinter(doubleprint);
   printk("doubleprint meeee\n");
 
-  printk("ferris says %d\n", rust_function() * 2);
+#include "rust_function.h"
+  printk("ferris says %d\n", rust_function());
 
   // Prepare to enter the matrix (by that I mean the async polling system)
   RESUME(true);

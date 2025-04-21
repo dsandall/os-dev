@@ -58,3 +58,5 @@ const char *strchr(const char *s, int c) {
 // extern char *strdup(const char *s);
 // WARN: No Malloc
 // TODO: Malloc
+//
+int get78() { return 78; };

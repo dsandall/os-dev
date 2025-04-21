@@ -8,3 +8,7 @@ name = "my_rust_lib"
 crate-type = ["staticlib"]
 
 [dependencies]
+
+
+[build-dependencies]
+bindgen = "0.71.1" # latest as of 2025

@@ -44,7 +44,7 @@ link: boot
 		--output build/isofiles/boot/kernel.bin \
 		--script src/linker.ld \
 		$(BOOT_OBJS) $(C_OBJS)\
-		./my_rust_lib/target/release/libmy_rust_lib.a
+		./my_rust_lib/target/x86_64-unknown-none/debug/libmy_rust_lib.a
 	@#printf "$(INFO) Section headers:\n"
 	@#objdump -h kernel.bin
 
