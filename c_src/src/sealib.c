@@ -59,4 +59,3 @@ const char *strchr(const char *s, int c) {
 // WARN: No Malloc
 // TODO: Malloc
 //
-int get78() { return 78; };

@@ -14,7 +14,7 @@ SRC := $(shell find src -name '*.c')
 OBJ := $(patsubst src/%.c,build/%.o,$(SRC))
 
 # Default target
-all:  clean $(OBJ)
+all:  clean $(OBJ) 
 
 # Pattern rule to compile .c -> .o
 build/%.o: src/%.c

@@ -13,22 +13,35 @@ extern ipc_channel_uint16_t vga_ipc;
 // - 1 channel (from IRQ PS2 -> this Task)
 // - 1 byte rx buffer
 
+// TODO: just something silly to do when you get a keypress
+void ps2_onkeypressevent(keyout_t k) {
+  // send on vga and serial channels
+  static bool send_both = false;
+  if (k == ' ') {
+    send_both = !send_both;
+  }
+
+  channel_send_uint16(&serial_ipc, k);
+  if (send_both) {
+    channel_send_uint16(&vga_ipc, k);
+  }
+};
+
 run_result_t ps2_rx_task(void *initial_state) {
 
   uint8_t out_byte;
   if (channel_recv_uint8(&ps2_ipc, &out_byte)) {
     tracek("rx - %d\n", out_byte);
-    // printk("channel recieved: %hx\n", recv_buf);
-
     // potentially rx from state machine
-
     keyout_result_t nextchar = ps2_state_machine_driver(out_byte);
 
-    if (nextchar.result == DATA) {
-      // send on vga and serial channels
-      channel_send_uint16(&serial_ipc, nextchar.keypress);
-      // channel_send_uint16(&vga_ipc, nextchar.keypress);// not needed, print
-      // handler writes directly
+    switch (nextchar.result) {
+    case PENDING:
+    case DEAD:
+      break;
+    case DATA:
+      ps2_onkeypressevent(nextchar.keypress);
+      break;
     }
   }
 

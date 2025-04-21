@@ -37,14 +37,14 @@ build_fat_img:
 		-serial stdio
 		#-d int,cpu_reset \
 
+
 link: boot
 	@printf "$(LINK) Linking into kernel.bin...\n"
 	$(MAKE) -C c_src all
 	ld --nmagic -nostdlib \
 		--output build/isofiles/boot/kernel.bin \
 		--script src/linker.ld \
-		$(BOOT_OBJS) $(C_OBJS)\
-		./my_rust_lib/target/x86_64-unknown-none/debug/libmy_rust_lib.a
+		$(BOOT_OBJS) $(C_OBJS)
 	@#printf "$(INFO) Section headers:\n"
 	@#objdump -h kernel.bin
 
@@ -64,3 +64,4 @@ clean:
 	@printf "$(CLEAN) Removing build files...\n"
 	rm -fr build
 	mkdir --parents build/isofiles/boot/grub
+

@@ -13,5 +13,4 @@
 -Isrc/async
 -Isrc/serial
 -Isrc/async/ipc_channel
--L ../my_rust_lib/target/release
--lmy_rust_lib
+

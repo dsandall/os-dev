@@ -13,10 +13,8 @@ run_result_t vga_task(void *initial_state) {
 
   uint16_t send_to_vga;
   if (channel_recv_uint16(&vga_ipc, &send_to_vga)) {
-    // printk("VGA%c", send_to_vga);
-    // WARN: ONly direct writes are enabled
+    printchar_vgatask(send_to_vga);
   }
-
   return PENDING;
 }
 
@@ -24,8 +22,8 @@ run_result_t vga_task(void *initial_state) {
 Textbox_t *default_box;
 
 // print handler, no channel from printer - writes directly to the vga textbox
-extern void print_char_tobox(char c, Textbox_t *box);
-void printchar_vgatask(char c) { print_char_tobox(c, default_box); }
+extern void print_char_tobox_immediate(char c, Textbox_t *box);
+void printchar_vgatask(char c) { print_char_tobox_immediate(c, default_box); }
 
 run_result_t vga_task_init(void *initial_state) {
 

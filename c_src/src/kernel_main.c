@@ -41,9 +41,6 @@ void kernel_main() {
   setPrinter(doubleprint);
   printk("doubleprint meeee\n");
 
-#include "rust_function.h"
-  printk("ferris says %d\n", rust_function());
-
   // Prepare to enter the matrix (by that I mean the async polling system)
   RESUME(true);
   while (1) {

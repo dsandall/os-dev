@@ -3,7 +3,7 @@
 
 static printfunction pc_fn = NULL;
 
-void printc_fn(char c) {
+static inline void printc_fn(char c) {
   if (pc_fn == NULL) {
     ERR_LOOP();
     //  WARN: were gonna allow this for now
@@ -15,14 +15,14 @@ void printc_fn(char c) {
 // sets the print fn used by any future print calls
 void setPrinter(printfunction fn) { pc_fn = fn; };
 
-void print_str(const char *str) {
+static inline void print_str(const char *str) {
   while (*str != '\0') {
     // WARN: write char by char (hopefully it terminates, lol)
     printc_fn((char)(*str++));
   }
 };
 
-void print_hex(uint64_t num) {
+static inline void print_hex(uint64_t num) {
   const char hex_digits[] = "0123456789ABCDEF";
   int started = 0;
 
@@ -40,14 +40,14 @@ void print_hex(uint64_t num) {
   }
 }
 
-void print_unsigned(uint64_t num) {
+static inline void print_unsigned(uint64_t num) {
   if (num >= 10) {
     print_unsigned(num / 10);
   }
   printc_fn('0' + (num % 10));
 }
 
-void print_signed(uint64_t num_abs, bool is_neg) {
+static inline void print_signed(uint64_t num_abs, bool is_neg) {
   if (is_neg) {
     printc_fn('-');
     print_unsigned(num_abs);
@@ -57,7 +57,7 @@ void print_signed(uint64_t num_abs, bool is_neg) {
 }
 
 // all "printk" ends up here
-__attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...) {
+__attribute__((format(printf, 1, 2))) inline int printk(const char *fmt, ...) {
 
   // %% %d %u %x %c %p %h[dux] %l[dux] %q[dux] %s
   va_list va;
