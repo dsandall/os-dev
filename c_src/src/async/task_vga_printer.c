@@ -19,7 +19,7 @@ run_result_t vga_task(void *initial_state) {
 }
 
 // pointer to a box and cursor struct
-Textbox_t *default_box;
+static Textbox_t *default_box;
 
 // print handler, no channel from printer - writes directly to the vga textbox
 extern void print_char_tobox_immediate(char c, Textbox_t *box);

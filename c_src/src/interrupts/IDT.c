@@ -37,7 +37,7 @@ typedef struct {
 ///////////////////////////////////////
 /// update interrupt_descriptor_table register in CPU
 ///
-Interrupt_CGD_t interrupt_descriptor_table[IDT_size];
+static Interrupt_CGD_t interrupt_descriptor_table[IDT_size];
 ///////////////////////////////////////
 
 // load IDTR struct into the IDT Register using "lidt"

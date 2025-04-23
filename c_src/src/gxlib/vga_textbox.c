@@ -49,7 +49,7 @@ void clear_Line(Textbox_t *box) {
   }
 };
 
-void print_char_tobox(char c, Textbox_t *box) {
+void print_char_tobox_immediate(char c, Textbox_t *box) {
   position_t *tc = &box->cursor;
 
   // Wrapping Logic

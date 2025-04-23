@@ -13,20 +13,6 @@ extern ipc_channel_uint16_t vga_ipc;
 // - 1 channel (from IRQ PS2 -> this Task)
 // - 1 byte rx buffer
 
-// TODO: just something silly to do when you get a keypress
-void ps2_onkeypressevent(keyout_t k) {
-  // send on vga and serial channels
-  static bool send_both = false;
-  if (k == ' ') {
-    send_both = !send_both;
-  }
-
-  channel_send_uint16(&serial_ipc, k);
-  if (send_both) {
-    channel_send_uint16(&vga_ipc, k);
-  }
-};
-
 run_result_t ps2_rx_task(void *initial_state) {
 
   uint8_t out_byte;
@@ -34,17 +20,28 @@ run_result_t ps2_rx_task(void *initial_state) {
     tracek("rx - %d\n", out_byte);
     // potentially rx from state machine
     keyout_result_t nextchar = ps2_state_machine_driver(out_byte);
+    char k = nextchar.keypress;
+
+    static bool send_both;
 
     switch (nextchar.result) {
+    case DATA:
+      send_both = false;
+
+      if (k == ' ') {
+        send_both = !send_both;
+      }
+
+      channel_send_uint16(&serial_ipc, k);
+      if (send_both) {
+        channel_send_uint16(&vga_ipc, k);
+      }
+      break;
     case PENDING:
     case DEAD:
       break;
-    case DATA:
-      ps2_onkeypressevent(nextchar.keypress);
-      break;
     }
   }
-
   return PENDING; // we want this to continue being called when it's turn on
                   // the scheduler arrives
 }
