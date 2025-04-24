@@ -1,4 +1,5 @@
 #include "freestanding.h"
+#include "interrupts.h"
 #include "macro_magic.h"
 ///////////////////////////////////////
 /// The IDT Spec:
@@ -23,7 +24,7 @@
 typedef struct {
   unsigned add_1 : 16;
   unsigned GDT_segment : 16;
-  unsigned interrupt_stack_table : 3;
+  unsigned IST_index : 3;
   unsigned : 5;
   unsigned gate_type : 4;
   unsigned : 1;
@@ -52,22 +53,24 @@ static inline void lidt(void *base, uint16_t size) {
 }
 
 void init_IDT(void) {
+
   for (int i = 0; i < IDT_size; i++) {
     uint64_t addr = (uint64_t)isr_wrappers[i];
-    interrupt_descriptor_table[i] = (Interrupt_CGD_t){
-        .add_1 = addr,
-        .add_2 = addr >> 16,
-        .add_3 = addr >> 32,
-        .present = true,
-        .DPL = X86_DPL_RING0,
-        .gate_type = X86_GATETYPE_HWINT,
-        .GDT_segment = X86_GDT_SEGMENT,
-        .interrupt_stack_table = 0 // NOTE: 0 means no stack change
-    };
+    interrupt_descriptor_table[i] =
+        (Interrupt_CGD_t){.add_1 = addr,
+                          .add_2 = addr >> 16,
+                          .add_3 = addr >> 32,
+                          .present = true,
+                          .DPL = X86_DPL_RING0,
+                          .gate_type = X86_GATETYPE_HWINT,
+                          .GDT_segment = X86_GDT_SEGMENT,
+                          .IST_index = 0};
   }
 
-  // WARN: this doesn't work
-  // interrupt_descriptor_table[0x21].interrupt_stack_table = 1;
+  // assign certain faults their own stack
+  interrupt_descriptor_table[FAULT_GENERAL_PROTECTION].IST_index = 1;
+  interrupt_descriptor_table[FAULT_DOUBLE].IST_index = 1;
+  interrupt_descriptor_table[FAULT_PAGE].IST_index = 1;
 
   lidt(&interrupt_descriptor_table,
        (uint16_t)(sizeof(Interrupt_CGD_t) * IDT_size) - 1);

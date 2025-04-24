@@ -21,8 +21,11 @@ void doubleprint(char c) {
   printchar_serialtask(c);
 }
 
+extern void recreate_gdt();
+
 void kernel_main() {
 
+  recreate_gdt();
   // vga, so we can printf
   spawn_task(vga_task, NULL, vga_task_init);
   printk("printing some stuff on vga\n");
@@ -43,6 +46,10 @@ void kernel_main() {
 
   // Prepare to enter the matrix (by that I mean the async polling system)
   RESUME(true);
+
+  // NOTE: force general protection fault, just to show that it switches stacks
+  __asm__("int $0x0D");
+
   while (1) {
     run_tasks();
   }

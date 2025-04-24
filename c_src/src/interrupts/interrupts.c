@@ -1,3 +1,4 @@
+#include "interrupts.h"
 #include "freestanding.h"
 #include "pic_8259.h"
 #include "printer.h"
@@ -119,9 +120,11 @@ void exception_handler(uint32_t vector) {
   case 0x07:
     printk("Device not available (FPU)\n");
     ERR_LOOP();
-  case 0x08:
+  case FAULT_DOUBLE:
+    // NOTE: Unique Stack
     printk("Double fault\n");
     ERR_LOOP();
+    goto exit_err_loop;
   case 0x0A:
     printk("Invalid TSS\n");
     ERR_LOOP();
@@ -131,12 +134,16 @@ void exception_handler(uint32_t vector) {
   case 0x0C:
     printk("Stack segment fault\n");
     ERR_LOOP();
-  case 0x0D:
+  case FAULT_GENERAL_PROTECTION:
+    // NOTE: Unique Stack
     printk("General protection fault\n");
     ERR_LOOP();
-  case 0x0E:
+    goto exit_err_loop;
+  case FAULT_PAGE:
+    // NOTE: Unique Stack
     printk("Page fault\n");
     ERR_LOOP();
+    goto exit_err_loop;
   case 0x10:
     printk("x87 FPU floating-point error\n");
     ERR_LOOP();
@@ -153,5 +160,6 @@ void exception_handler(uint32_t vector) {
     printk("CPU exceptions %d\n", vector);
     ERR_LOOP();
   }
+exit_err_loop:
   return;
 }

@@ -6,7 +6,7 @@ break long_mode_start
 #break hw_serial_init
 #break hw_serial_task
 #break serial_tx_handler
-#break asm_int_handler
+break asm_int_handler
 #break doubleprint
 break kernel_main
 break ps2_onkeypressevent

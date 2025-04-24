@@ -2,12 +2,13 @@
 
 global start
 extern long_mode_start
+extern stack_kernel
 
 section .text
 bits 32
 start:
   ; initialize stack pointer reg (esp)
-  mov esp, stack_top
+  mov esp, stack_kernel + 4096
 
   ; verify platform
   call check_multiboot
@@ -176,9 +177,9 @@ p3_table:
     resb 4096
 p2_table:
     resb 4096
-stack_bottom:
-    resb 64
-stack_top:
+;stack_bottom:
+;    resb 64
+;stack_top:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; https://os.phil-opp.com/entering-longmode/#the-global-descriptor-table
