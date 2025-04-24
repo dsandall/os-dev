@@ -6,6 +6,6 @@ add-symbol-file ./build/longboot.o
 add-symbol-file ./build/multiboot_header.o
 add-symbol-file ./c_src/build/interrupts/interrupts.o
 target remote localhost:1234 
-layout src
+#layout src
 
 source breakpoints.gdb

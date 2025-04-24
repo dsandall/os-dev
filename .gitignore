@@ -5,6 +5,7 @@ unpackDevEnv
 **.o
 
 
+.gdb_history
 # Prerequisites
 *.d
 

@@ -9,8 +9,8 @@
 #define IDT_size 256
 #define X86_GATETYPE_HWINT 0xE
 #define X86_GATETYPE_TRAP 0xF
-#define X86_DPL_RING0 0      // WARN: not sure abt this one
-#define X86_GDT_SEGMENT 0x08 // WARN: not sure abt this one
+#define X86_DPL_RING0 0          // WARN: not sure abt this one
+#define X86_GDT_SEGMENT (1 << 3) // WARN: not sure abt this one
 
 //
 /* Note from Dr. Bellardo: */
@@ -62,8 +62,12 @@ void init_IDT(void) {
         .DPL = X86_DPL_RING0,
         .gate_type = X86_GATETYPE_HWINT,
         .GDT_segment = X86_GDT_SEGMENT,
+        .interrupt_stack_table = 0 // NOTE: 0 means no stack change
     };
   }
+
+  // WARN: this doesn't work
+  // interrupt_descriptor_table[0x21].interrupt_stack_table = 1;
 
   lidt(&interrupt_descriptor_table,
        (uint16_t)(sizeof(Interrupt_CGD_t) * IDT_size) - 1);
