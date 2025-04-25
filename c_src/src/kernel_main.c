@@ -23,7 +23,10 @@ void doubleprint(char c) {
 
 extern void recreate_gdt();
 
+extern void parse_multiboot();
 void kernel_main() {
+
+  parse_multiboot();
 
   recreate_gdt();
   // vga, so we can printf

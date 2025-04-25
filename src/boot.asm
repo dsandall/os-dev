@@ -3,6 +3,8 @@
 global start
 extern long_mode_start
 extern stack_kernel
+extern multiboot_pointer
+extern multiboot_magic
 
 section .text
 bits 32
@@ -10,7 +12,10 @@ start:
   ; initialize stack pointer reg (esp)
   mov esp, stack_kernel + 4096
 
-  ; verify platform
+  mov [multiboot_pointer], ebx
+  mov [multiboot_magic], eax
+
+; verify platform
   call check_multiboot
   call check_cpuid
   call check_long_mode
