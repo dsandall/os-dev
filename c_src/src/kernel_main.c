@@ -16,6 +16,8 @@ extern run_result_t hw_serial_task(void *initial_state);
 extern run_result_t hw_serial_init(void *initial_state);
 
 extern void printchar_serialtask(char c);
+
+void kernel_main();
 void doubleprint(char c) {
   printchar_vgatask(c);
   printchar_serialtask(c);
@@ -26,13 +28,12 @@ extern void recreate_gdt();
 extern void parse_multiboot();
 void kernel_main() {
 
-  parse_multiboot();
-
   recreate_gdt();
   // vga, so we can printf
   spawn_task(vga_task, NULL, vga_task_init);
   printk("printing some stuff on vga\n");
 
+  parse_multiboot();
   // hw interrupts, so we can interact with I/O and handle exceptions
   spawn_task(NULL, NULL, hw_int_task_init);
 

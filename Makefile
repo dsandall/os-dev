@@ -32,6 +32,7 @@ build_fat_img:
 	fish --init-command='set fish_trace on' createfat32img.fish
 	@printf "$(INFO) Running OS...\n"
 	qemu-system-x86_64 \
+		-m 256M\
 		-drive format=raw,file=build/fat32.img\
 		-S -s\
 		-serial stdio

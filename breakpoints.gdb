@@ -10,6 +10,7 @@ break asm_int_handler
 #break doubleprint
 break kernel_main
 break ps2_onkeypressevent
+break generate_memory_map
 disp vga_ipc
 disp ps2_ipc
 
