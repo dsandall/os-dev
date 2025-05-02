@@ -1,8 +1,9 @@
 #include "multiboot.h"
 #include "book.h"
+#include "printer.h"
+#include "regions.h"
 #include <freestanding.h>
 #include <stdint.h>
-
 /*
  * You will need two main references for this task. The first is the multiboot
  * specification. The specification lists the exact structure of the tags and
@@ -44,11 +45,14 @@ typedef struct {
   uint32_t reserved; // 0
 } mem_map_entry_t;
 
+////////////////////////////
+/// ELF Parsing
+////////////////////////////
 typedef struct {
-  uint16_t num_entries;
-  uint16_t entry_size;
-  uint16_t shndx;
-  uint16_t reserved;
+  mb_tag_header_t mb_tag;
+  uint32_t num_entries;
+  uint32_t entry_size;
+  uint32_t shndx;
 } elf_tag_t;
 
 typedef struct {
@@ -64,29 +68,41 @@ typedef struct {
   uint64_t entry_size;    // bytes
 } elf_section_header_t;
 
-static int dwarves;
-elf_section_header_t dwarf_array[100];
+static uint64_t dwarves;
+static elf_section_header_t dwarf_array[100];
+static int shndx;
+
+static char *ret_name_string_by_index(int i) {
+  int offset = dwarf_array[i].name_string_offset;
+  printk("offset: %d\n", offset);
+
+  char *string_blob = (char *)&dwarf_array[shndx];
+  return &string_blob[offset];
+}
 
 static void parse_elf_section_headers(mb_tag_header_t *header) {
-  uint32_t *p = ((uint32_t *)header) + sizeof(*header) / sizeof(uint32_t);
-  elf_tag_t tag = *(elf_tag_t *)p;
 
-  // TODO: for "elf section header" in entries....
-  p += sizeof(tag) / sizeof(uint32_t);
-  elf_section_header_t *entry = (elf_section_header_t *)p;
-  for (; dwarves < tag.num_entries;) {
-    dwarf_array[dwarves++] = *entry++;
+  elf_tag_t *tag = (elf_tag_t *)header;
+  shndx = tag->shndx;
+
+  if (sizeof(elf_section_header_t) != tag->entry_size) {
+    ERR_LOOP();
   }
 
-  dwarf_array[tag.shndx];
+  elf_section_header_t *entry =
+      (elf_section_header_t *)((void *)tag + sizeof(*tag));
 
-  for (int i = 0; i < dwarves; i++) {
-    printk("type: %d\n", dwarf_array[i].type);
+  // for "elf section header" in entries....
+  for (; dwarves < tag->num_entries;) {
+    dwarf_array[dwarves++] = *entry++;
   }
 };
 
+////////////////////////////
+/// MEM_MAP Parsing (phys mem)
+////////////////////////////
 static int e;
-mem_map_entry_t entries[32];
+static mem_map_entry_t entries[32];
 
 static void parse_mem_maps(mb_tag_header_t *header) {
   uint32_t *p = ((uint32_t *)header) + sizeof(*header) / sizeof(uint32_t);
@@ -102,66 +118,7 @@ static void parse_mem_maps(mb_tag_header_t *header) {
   }
 };
 
-static void read_tag(mb_tag_header_t *header) {
-  switch (header->type) {
-  case BOOTLOADER_NAME:
-    printk("bootloader is %s\n", ((uint8_t *)header) + 8);
-    break;
-  case MEM_MAP: {
-    parse_mem_maps(header);
-  } break;
-  case ELF_SYMBOLS: {
-    parse_elf_section_headers(header);
-  } break;
-  case BOOT_CLI:
-  case MODULES:
-  case MEMORY:
-  case DEVICE:
-  case VBE_INFO:
-  case FRAMEBUFFER_INFO:
-  case APM_TABLE:
-  default:
-    break;
-  }
-}
-
-static void generate_memory_map() {
-
-  initPageAllocator();
-
-  printk("%lu\n", &entries[0]);
-
-  // generate include list
-  uint64_t available;
-  for (int i = 0; i < e; i++) {
-    mem_map_entry_t m = entries[i];
-    if (m.type == 1) {
-      m.base_addr;
-      available += m.length;
-      const phys_mem_region_t add = {m.base_addr, m.length};
-      makePage(add);
-    }
-  }
-  printk(" %d kibibytes available\n", available / 1024);
-
-  // Generate exclude list
-  uint64_t offset = dwarf_array[1].virt_addr - dwarf_array[1].file_offset;
-  uint64_t used;
-  for (int i = 0; i < dwarves; i++) {
-    elf_section_header_t d = dwarf_array[i];
-    if (d.virt_addr && (d.flags & 0x2)) {
-      uint64_t phys_add = d.virt_addr - offset;
-      used += d.size;
-      const phys_mem_region_t remove = {phys_add, d.size};
-      takePage(remove);
-    }
-  }
-  printk(" %d kibibytes used\n", used / 1024);
-
-  ERR_LOOP(); // TODO:
-};
-
-void parse_multiboot() {
+static void parse_multiboot() {
   if (MULTIBOOT2_BOOTLOADER_MAGIC != multiboot_magic) {
     ERR_LOOP();
   }
@@ -182,8 +139,114 @@ void parse_multiboot() {
     next_tag = (void *)((addr + 7) &
                         ~((uintptr_t)7)); // Round up to next multiple of 8
 
-    read_tag(next_tag);
+    mb_tag_header_t *header = (mb_tag_header_t *)next_tag;
+
+    switch (header->type) {
+    case BOOTLOADER_NAME:
+      printk("bootloader is %s\n", ((uint8_t *)header) + 8);
+      break;
+    case MEM_MAP: {
+      parse_mem_maps(header);
+    } break;
+    case ELF_SYMBOLS: {
+      parse_elf_section_headers(header);
+    } break;
+    case BOOT_CLI:
+    case MODULES:
+    case MEMORY:
+    case DEVICE:
+    case VBE_INFO:
+    case FRAMEBUFFER_INFO:
+    case APM_TABLE:
+    default:
+      break;
+    }
+  }
+}
+
+////////////////////////////
+/// Coalesce Memory Regions
+////////////////////////////
+static void generate_memory_map(phys_mem_region_t coalesced[100],
+                                int *num_coalesced) {
+  phys_mem_region_t available[64];
+  phys_mem_region_t used[64];
+  int num_available = 0;
+  int num_used = 0;
+
+  initPageAllocator();
+
+  // generate include list
+  uint64_t bytes_available;
+  for (int i = 0; i < e; i++) {
+    mem_map_entry_t m = entries[i];
+    if (m.type == 1) {
+      m.base_addr;
+      bytes_available += m.length;
+      available[num_available++] = (phys_mem_region_t){m.base_addr, m.length};
+    }
+  }
+  printk(" %d bytes available\n", (bytes_available));
+  printk(" %d mebibytes available\n", (bytes_available / (1024 * 1024)));
+
+  // check offset is what we expect
+  uint64_t offset = dwarf_array[1].virt_addr - dwarf_array[1].file_offset;
+  if (offset != VIRT_MEM_OFFSET) {
+    // NOTE: this offset should be constant and determined by the page mapping
+    // at boot
+    ERR_LOOP();
   }
 
-  generate_memory_map();
+  // Generate exclude list
+  uint64_t bytes_used;
+  for (int i = 0; i < dwarves; i++) {
+    elf_section_header_t d = dwarf_array[i];
+    if (d.virt_addr && (d.flags & 0x2)) {
+      uint64_t phys_add = d.virt_addr - offset;
+      bytes_used += d.size;
+      used[num_used++] = (phys_mem_region_t){phys_add, d.size};
+    }
+  }
+
+  // add Multiboot 2 Data structure to the used list
+  uint32_t *b = (uint32_t *)multiboot_pointer;
+  uint32_t size_bytes = b[0];
+  used[num_used++] =
+      (phys_mem_region_t){multiboot_pointer - offset, size_bytes};
+
+  // print fun facts
+  printk(" %d bytes used\n", (bytes_used));
+  printk(" %d mebibytes used\n", (bytes_used / (1024 * 1024)));
+
+  // coalesce free mem regions
+  if (validate_and_coalesce(available, num_available, used, num_used, coalesced,
+                            num_coalesced, 100) == 0) {
+    ERR_LOOP();
+  }
+};
+
+void fiftytwo_card_pickup() {
+  // parse the mb header and collect entries
+  parse_multiboot();
+
+  // generate clean list of free memory
+  phys_mem_region_t coalesced[100];
+  int num_coalesced;
+  generate_memory_map(coalesced, &num_coalesced);
+
+  // turn each coalesced region into pages and add to free list (stored in
+  // memory , on pages)
+  int pages_allocated;
+  for (int i = 0; i < num_coalesced; i++) {
+    pages_allocated += makePage(coalesced[i]);
+
+    if (pages_allocated > 100)
+      break;
+  }
+
+  printk("generated %d free pages (%d mebibytes)\n", pages_allocated,
+         (pages_allocated * PAGE_SIZE / (1024 * 1024)));
+
+  // the requested demo
+  testPageAllocator();
 }

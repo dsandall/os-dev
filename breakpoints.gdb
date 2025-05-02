@@ -11,7 +11,13 @@ break asm_int_handler
 break kernel_main
 break ps2_onkeypressevent
 break generate_memory_map
-disp vga_ipc
-disp ps2_ipc
+#disp vga_ipc
+#disp ps2_ipc
 
-
+layout src
+break read_tag
+break parse_elf_section_headers
+break generate_memory_map
+break fiftytwo_card_pickup
+break makePage
+break testPageAllocator

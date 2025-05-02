@@ -13,4 +13,5 @@
 -Isrc/async
 -Isrc/serial
 -Isrc/async/ipc_channel
+-Isrc/pageframealloc
 

@@ -1,5 +1,7 @@
 #include "async.h"
 #include "freestanding.h"
+#include "interrupts.h"
+#include "multiboot.h"
 #include "printer.h"
 #include "serial.h"
 #include "vga_textbox.h"
@@ -17,23 +19,22 @@ extern run_result_t hw_serial_init(void *initial_state);
 
 extern void printchar_serialtask(char c);
 
-void kernel_main();
 void doubleprint(char c) {
   printchar_vgatask(c);
   printchar_serialtask(c);
 }
 
-extern void recreate_gdt();
-
-extern void parse_multiboot();
 void kernel_main() {
 
   recreate_gdt();
+
   // vga, so we can printf
   spawn_task(vga_task, NULL, vga_task_init);
   printk("printing some stuff on vga\n");
 
-  parse_multiboot();
+  // generate free memory list
+  fiftytwo_card_pickup();
+
   // hw interrupts, so we can interact with I/O and handle exceptions
   spawn_task(NULL, NULL, hw_int_task_init);
 
@@ -41,9 +42,10 @@ void kernel_main() {
   spawn_task(ps2_rx_task, NULL, NULL);
   printk("hardware ps2 enabled, interrupts not enabled yet\n");
 
+  // initialize hardware serial
   spawn_task(hw_serial_task, NULL, hw_serial_init);
-
   printk("single print\n");
+
   // setup double printing
   setPrinter(doubleprint);
   printk("doubleprint meeee\n");
@@ -52,7 +54,7 @@ void kernel_main() {
   RESUME(true);
 
   // NOTE: force general protection fault, just to show that it switches stacks
-  __asm__("int $0x0D");
+  //__asm__("int $0x0D");
 
   while (1) {
     run_tasks();

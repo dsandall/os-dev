@@ -7,4 +7,6 @@
 
 #define STACK_SIZE 4096 // 4 KiB stack size
 
+void recreate_gdt();
+
 #endif

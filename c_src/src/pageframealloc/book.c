@@ -1,4 +1,8 @@
 #include "book.h"
+#include "freestanding.h"
+#include "multiboot.h"
+#include "printer.h"
+#include <stdint.h>
 
 //////////////////////
 //////////////////////
@@ -22,20 +26,132 @@
 /// /////
 ///
 
+typedef struct recursive_page {
+  struct recursive_page *next;
+} page_t;
+
+static page_t *free_list = NULL;
+
 void initPageAllocator() {
 
 };
 
-phys_mem_region_t real_memory[100];
-uint32_t num_regions;
+int makePage(phys_mem_region_t available) {
 
-void makePage(phys_mem_region_t available) {
-  real_memory[num_regions++] = available;
+  uintptr_t base =
+      (available.base + PAGE_SIZE - 1) &
+      ~(PAGE_SIZE - 1); // align up (we will lose a little bit of memory if not
+                        // page aligned, but we cant have partial pages)
 
-  // free the page in the other structure
-  // freePhysRegion();
+  // we are not going to use the first page of memory, because it's address is
+  // NULL. Too much hassle for 4096 bytes
+  if (base == 0) {
+    base = PAGE_SIZE;
+  }
+
+  uintptr_t end = available.base + available.size;
+
+  int pages_allocated = 0;
+  while (base + PAGE_SIZE <= end) {
+    // WARN: I add offset to the physical pointer here.
+    // is phys addr, kernel still using vaddr identity mapping
+    page_t *page = (page_t *)(base + VIRT_MEM_OFFSET); // create pointer to the
+                                                       // first occupied page ()
+    page->next = free_list; // push existing onto the new head
+    free_list = page;       // set the new head
+
+    base += PAGE_SIZE; // and keep going
+    pages_allocated++;
+  }
+
+  return pages_allocated;
+}
+
+void *MMU_pf_alloc(void) {
+  void *next_free_page = (void *)free_list;
+  if (next_free_page == NULL) {
+    return NULL;
+    // ERR_LOOP();
+    //  no memory lol
+  }
+
+  free_list = free_list->next;
+  return next_free_page;
 };
 
-void takePage(phys_mem_region_t not_available) {
-  // mallocPhysRegion();
+bool MMU_pf_free(void *pf) {
+
+  if (pf < VIRT_MEM_OFFSET) {
+    ERR_LOOP();
+  }
+
+  phys_mem_region_t returned_page = {((uint64_t)pf) - VIRT_MEM_OFFSET,
+                                     PAGE_SIZE};
+  if (makePage(returned_page) != 1) {
+    ERR_LOOP();
+  };
+  return true;
 };
+
+static void testPageAllocator_stresstest() {
+  const int magic = 7;
+  // stress test by allocating all pages, writing something unique to the full
+  // page, and verifying the full page
+  uint64_t pagenum = 0;
+  void *allpages[70000];
+  while ((allpages[pagenum] = MMU_pf_alloc())) {
+    // write to the full page
+    void *p = allpages[pagenum];
+    for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
+      *c = pagenum + magic;
+    }
+    // and do the next
+    pagenum++;
+  };
+
+  printk("successfully allocated and wrote magic to %d pages\n", pagenum);
+
+  // verify each number in each page
+  for (int i = 0; i < pagenum; i++) {
+    void *p = allpages[i];
+    for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
+      if (*c != i + magic) {
+        ERR_LOOP();
+      } else {
+      }
+    }
+  }
+
+  printk("%d pages were verified\n", pagenum);
+
+  // free each page
+  for (int i = 0; i < pagenum; i++) {
+    void *p = allpages[i];
+    if (MMU_pf_free(p) == false) {
+      ERR_LOOP();
+    };
+  }
+
+  printk("%d pages were freed\n", pagenum);
+}
+
+void testPageAllocator() {
+  // allocate and free a few pages , print the addresses
+  // ensure that physical pages are reused when freed
+  for (int i; i < 3; i++) {
+    void *p1, *p2;
+    p1 = MMU_pf_alloc();
+    p2 = MMU_pf_alloc();
+    printk("alloc'd %ll\n", p1);
+    printk("alloc'd %ll\n", p2);
+
+    MMU_pf_free(p1);
+    printk("free'd %ll\n", p1);
+
+    // we leak a lil memory here
+  }
+
+  testPageAllocator_stresstest();
+  testPageAllocator_stresstest();
+  testPageAllocator_stresstest();
+}
