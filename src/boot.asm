@@ -173,7 +173,6 @@ enable_paging:
 ; reserve bytes for stack_bottom (allocates space for stack)
 ;               and page table (required for long mode)
 ; https://os.phil-opp.com/entering-longmode/#creating-a-stack
-; https://os.phil-opp.com/entering-longmode/#set-up-identity-paging
 section .bss
 align 4096
 p4_table:

@@ -78,7 +78,6 @@ int validate_and_coalesce(const phys_mem_region_t *available,
     tmp[tmp_count++] = available[i];
 
   // 3. Subtract all used regions from tmp
-
   for (int i = 0; i < used_count; i++) {
     int new_count = 0;
 
@@ -119,11 +118,18 @@ int validate_and_coalesce(const phys_mem_region_t *available,
     }
   }
 
-  *out_count = out_idx;
+  // 6. Filter out regions smaller than 4096 bytes
+  int final_count = 0;
+  for (int i = 0; i < out_idx; i++) {
+    if (out[i].size >= 4096) {
+      out[final_count++] = out[i];
+    }
+  }
+  *out_count = final_count;
 
   // Optional: reporting
   uint64_t bytes_free = 0;
-  for (int i = 0; i < out_idx; i++)
+  for (int i = 0; i < final_count; i++)
     bytes_free += out[i].size;
 
   printk("%llu bytes in free table\n", bytes_free);

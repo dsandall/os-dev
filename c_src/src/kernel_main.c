@@ -32,12 +32,11 @@ void kernel_main() {
   spawn_task(vga_task, NULL, vga_task_init);
   printk("printing some stuff on vga\n");
 
-  // generate free memory list
-  fiftytwo_card_pickup();
-
   // hw interrupts, so we can interact with I/O and handle exceptions
   spawn_task(NULL, NULL, hw_int_task_init);
 
+  // generate free memory list
+  fiftytwo_card_pickup();
   // now ps2 is set up and you should be rxing keeb interrupts
   spawn_task(ps2_rx_task, NULL, NULL);
   printk("hardware ps2 enabled, interrupts not enabled yet\n");

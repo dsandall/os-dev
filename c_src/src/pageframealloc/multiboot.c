@@ -229,7 +229,7 @@ void fiftytwo_card_pickup() {
   // parse the mb header and collect entries
   parse_multiboot();
 
-  // generate clean list of free memory
+  // generate clean list of non-kernel available memory
   phys_mem_region_t coalesced[100];
   int num_coalesced;
   generate_memory_map(coalesced, &num_coalesced);
@@ -240,7 +240,7 @@ void fiftytwo_card_pickup() {
   for (int i = 0; i < num_coalesced; i++) {
     pages_allocated += makePage(coalesced[i]);
 
-    if (pages_allocated > 100)
+    if (pages_allocated > 300)
       break;
   }
 

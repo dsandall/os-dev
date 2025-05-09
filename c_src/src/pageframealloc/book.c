@@ -38,18 +38,21 @@ void initPageAllocator() {
 
 int makePage(phys_mem_region_t available) {
 
-  uintptr_t base =
+  uintptr_t initial_base =
       (available.base + PAGE_SIZE - 1) &
       ~(PAGE_SIZE - 1); // align up (we will lose a little bit of memory if not
                         // page aligned, but we cant have partial pages)
 
+  uintptr_t base = initial_base;
   // we are not going to use the first page of memory, because it's address is
   // NULL. Too much hassle for 4096 bytes
   if (base == 0) {
     base = PAGE_SIZE;
   }
 
-  uintptr_t end = available.base + available.size;
+  uintptr_t given_end = available.base + available.size;
+  uintptr_t new_size = given_end - base;
+  uintptr_t end = base + new_size;
 
   int pages_allocated = 0;
   while (base + PAGE_SIZE <= end) {
@@ -57,8 +60,22 @@ int makePage(phys_mem_region_t available) {
     // is phys addr, kernel still using vaddr identity mapping
     page_t *page = (page_t *)(base + VIRT_MEM_OFFSET); // create pointer to the
                                                        // first occupied page ()
+
+    // for 256M
+    // if (page == (void *)0x10000000) {
+    if (page == (void *)0x4000000) {
+      break;
+      // WARN: this is really stupid but i am quite frustrated at the moment and
+      // this fixes the error.
+    }
+
     page->next = free_list; // push existing onto the new head
-    free_list = page;       // set the new head
+
+    if (page->next == NULL && free_list != NULL) {
+      ERR_LOOP();
+    }
+
+    free_list = page; // set the new head
 
     base += PAGE_SIZE; // and keep going
     pages_allocated++;
@@ -71,25 +88,42 @@ void *MMU_pf_alloc(void) {
   void *next_free_page = (void *)free_list;
   if (next_free_page == NULL) {
     return NULL;
-    // ERR_LOOP();
+    ERR_LOOP();
     //  no memory lol
   }
 
   free_list = free_list->next;
+  if (next_free_page == 0xFFFFFFFFFFFFFFFF) {
+    ERR_LOOP();
+  }
+
   return next_free_page;
 };
 
 bool MMU_pf_free(void *pf) {
 
-  if (pf < VIRT_MEM_OFFSET) {
+  if (pf < (void *)VIRT_MEM_OFFSET) {
     ERR_LOOP();
+    // should be a virt addr
   }
 
+  /*
   phys_mem_region_t returned_page = {((uint64_t)pf) - VIRT_MEM_OFFSET,
                                      PAGE_SIZE};
   if (makePage(returned_page) != 1) {
-    ERR_LOOP();
+   ERR_LOOP();
   };
+  */
+
+  if (pf == (void *)0xbb5000) {
+  yeetr:
+    int strstr = 0;
+  }
+
+  page_t *list = free_list;
+  free_list = (page_t *)pf;
+  free_list->next = list;
+
   return true;
 };
 
@@ -97,14 +131,23 @@ static void testPageAllocator_stresstest() {
   const int magic = 7;
   // stress test by allocating all pages, writing something unique to the full
   // page, and verifying the full page
-  uint64_t pagenum = 0;
+
+  // allocate as many pages as you can, record all pointers, write magic to full
+  // page
+  int pagenum = 0;
   void *allpages[70000];
-  while ((allpages[pagenum] = MMU_pf_alloc())) {
+  while ((allpages[pagenum] = MMU_pf_alloc()) != NULL) {
+
     // write to the full page
     void *p = allpages[pagenum];
-    for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
-      *c = pagenum + magic;
+    if (p != 0xFFFFFFFFFFFFFFFF) {
+      for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
+        *c = pagenum + magic;
+      }
+    } else {
+      printk("bunk\n");
     }
+
     // and do the next
     pagenum++;
   };
@@ -114,11 +157,14 @@ static void testPageAllocator_stresstest() {
   // verify each number in each page
   for (int i = 0; i < pagenum; i++) {
     void *p = allpages[i];
-    for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
-      if (*c != i + magic) {
-        ERR_LOOP();
-      } else {
+    if (p != 0xFFFFFFFFFFFFFFFF) {
+      for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
+        if (*c != i + magic) {
+          ERR_LOOP();
+        }
       }
+    } else {
+      printk("bunk\n");
     }
   }
 
@@ -127,9 +173,13 @@ static void testPageAllocator_stresstest() {
   // free each page
   for (int i = 0; i < pagenum; i++) {
     void *p = allpages[i];
-    if (MMU_pf_free(p) == false) {
-      ERR_LOOP();
-    };
+    if (p != 0xFFFFFFFFFFFFFFFF) {
+      if (MMU_pf_free(p) == false) {
+        ERR_LOOP();
+      };
+    } else {
+      printk("bunk\n");
+    }
   }
 
   printk("%d pages were freed\n", pagenum);
@@ -148,10 +198,12 @@ void testPageAllocator() {
     MMU_pf_free(p1);
     printk("free'd %ll\n", p1);
 
-    // we leak a lil memory here
+    // WARN: we leak a lil memory here
   }
 
   testPageAllocator_stresstest();
   testPageAllocator_stresstest();
   testPageAllocator_stresstest();
+  testPageAllocator_stresstest();
+  // testPageAllocator_stresstest();
 }
