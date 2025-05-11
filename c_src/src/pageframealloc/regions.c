@@ -52,7 +52,7 @@ static int subtract_region(const phys_mem_region_t *avail,
   return count;
 }
 
-#define MAX_REGIONS 256
+#define MAX_REGIONS 1024
 static phys_mem_region_t tmp[MAX_REGIONS * 2];
 static phys_mem_region_t new_tmp[MAX_REGIONS * 2];
 int validate_and_coalesce(const phys_mem_region_t *available,
@@ -69,7 +69,7 @@ int validate_and_coalesce(const phys_mem_region_t *available,
       }
     }
     if (!found)
-      return 0;
+      ERR_LOOP();
   }
 
   // 2. Copy available into temp array
@@ -112,7 +112,7 @@ int validate_and_coalesce(const phys_mem_region_t *available,
         prev->size += tmp[i].size;
       } else {
         if (out_idx >= out_max)
-          return 0;
+          ERR_LOOP();
         out[out_idx++] = tmp[i];
       }
     }

@@ -136,7 +136,8 @@ __attribute__((format(printf, 1, 2))) inline int printk(const char *fmt, ...) {
         case 'd':
           print_signed(n, is_neg);
           break;
-        case 'u':
+          // case 'u':
+          // case 'l':
           print_unsigned(n);
           break;
         case 'x':

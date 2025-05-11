@@ -5,7 +5,7 @@
 #define FAULT_DOUBLE 0x08
 #define FAULT_PAGE 0x0E
 
-#define STACK_SIZE 4096 // 4 KiB stack size
+#define STACK_SIZE (16384) // 4 KiB stack size
 
 void recreate_gdt();
 

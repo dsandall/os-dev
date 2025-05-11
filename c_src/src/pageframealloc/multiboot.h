@@ -1,7 +1,8 @@
 #ifndef MULTIBOOT_H
 #define MULTIBOOT_H
 
-#define VIRT_MEM_OFFSET 0xFF000
+// comes from multiboot header being placed first in the linker script.
+#define MULTIBOOT_VADDR_OFFSET 0xFF000
 
 #include "book.h"
 #include "freestanding.h"

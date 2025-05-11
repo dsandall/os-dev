@@ -1,8 +1,16 @@
 ; https://os.phil-opp.com/entering-longmode/
-
 global start
+
+; long mode main
 extern long_mode_start
+
+; initial kernel page tables and stack
+extern p4_table
+extern p3_table
+extern p2_table
 extern stack_kernel
+
+; data passed by grub
 extern multiboot_pointer
 extern multiboot_magic
 
@@ -12,6 +20,7 @@ start:
   ; initialize stack pointer reg (esp)
   mov esp, stack_kernel + 4096
 
+  ; store GRUB data to static location
   mov [multiboot_pointer], ebx
   mov [multiboot_magic], eax
 
@@ -173,14 +182,14 @@ enable_paging:
 ; reserve bytes for stack_bottom (allocates space for stack)
 ;               and page table (required for long mode)
 ; https://os.phil-opp.com/entering-longmode/#creating-a-stack
-section .bss
-align 4096
-p4_table:
-    resb 4096
-p3_table:
-    resb 4096
-p2_table:
-    resb 4096
+;;;;;;;section .bss
+;;;;;;;align 4096
+;;;;;;;p4_table:
+;;;;;;;    resb 4096
+;;;;;;;p3_table:
+;;;;;;;    resb 4096
+;;;;;;;p2_table:
+;;;;;;;    resb 4096
 ;stack_bottom:
 ;    resb 64
 ;stack_top:

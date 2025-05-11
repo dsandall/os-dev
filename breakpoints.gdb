@@ -1,4 +1,4 @@
-break long_mode_start
+#break long_mode_start
 #break init_PS2
 #break run_tasks
 #break ps2_rx_task
@@ -9,7 +9,7 @@ break long_mode_start
 break exception_handler
 #break asm_int_handler
 #break doubleprint
-#break kernel_main
+break kernel_main
 break ps2_onkeypressevent
 #break generate_memory_map
 #disp vga_ipc

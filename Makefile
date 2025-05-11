@@ -38,7 +38,6 @@ build_fat_img:
 		-serial stdio
 		#-d int,cpu_reset \
 
-
 link: boot
 	@printf "$(LINK) Linking into kernel.bin...\n"
 	$(MAKE) -C c_src all

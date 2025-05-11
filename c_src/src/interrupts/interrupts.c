@@ -97,6 +97,14 @@ ISR_void PIC_common_handler(uint32_t vector) {
 // Exception Handling
 ///////////
 
+void pageFault_handler() {
+  uint64_t cr3_copy, cr2_copy;
+  __asm__ volatile("mov %%cr3, %0" : "=r"(cr3_copy));
+  __asm__ volatile("mov %%cr2, %0" : "=r"(cr2_copy));
+  printk("Page fault\n");
+  ERR_LOOP();
+}
+
 void exception_handler(uint32_t vector) {
   switch (vector) {
   case 0x00:
@@ -141,7 +149,7 @@ void exception_handler(uint32_t vector) {
     goto exit_err_loop;
   case FAULT_PAGE:
     // NOTE: Unique Stack
-    printk("Page fault\n");
+    pageFault_handler();
     ERR_LOOP();
     goto exit_err_loop;
   case 0x10:

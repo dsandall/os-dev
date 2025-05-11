@@ -9,11 +9,13 @@ typedef struct {
   uint32_t size;
 } phys_mem_region_t;
 
-void initPageAllocator();
 void testPageAllocator();
+void testPageAllocator_stresstest();
 
 int makePage(phys_mem_region_t available);
-void takePage(phys_mem_region_t not_available);
+
+void *MMU_pf_alloc(void);
+bool MMU_pf_free(void *pf);
 
 void alloc();
 void free();

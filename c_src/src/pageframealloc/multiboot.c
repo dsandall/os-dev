@@ -174,8 +174,6 @@ static void generate_memory_map(phys_mem_region_t coalesced[100],
   int num_available = 0;
   int num_used = 0;
 
-  initPageAllocator();
-
   // generate include list
   uint64_t bytes_available;
   for (int i = 0; i < e; i++) {
@@ -191,7 +189,7 @@ static void generate_memory_map(phys_mem_region_t coalesced[100],
 
   // check offset is what we expect
   uint64_t offset = dwarf_array[1].virt_addr - dwarf_array[1].file_offset;
-  if (offset != VIRT_MEM_OFFSET) {
+  if (offset != MULTIBOOT_VADDR_OFFSET) {
     // NOTE: this offset should be constant and determined by the page mapping
     // at boot
     ERR_LOOP();
@@ -236,17 +234,17 @@ void fiftytwo_card_pickup() {
 
   // turn each coalesced region into pages and add to free list (stored in
   // memory , on pages)
-  int pages_allocated;
+  int pages_allocated = 0;
   for (int i = 0; i < num_coalesced; i++) {
     pages_allocated += makePage(coalesced[i]);
 
-    if (pages_allocated > 300)
+    if (pages_allocated > 300) {
       break;
+    }
   }
 
-  printk("generated %d free pages (%d mebibytes)\n", pages_allocated,
+  printk("initially generated %d free pages (%d mebibytes)\n", pages_allocated,
          (pages_allocated * PAGE_SIZE / (1024 * 1024)));
 
-  // the requested demo
-  testPageAllocator();
+  testPageAllocator_stresstest();
 }

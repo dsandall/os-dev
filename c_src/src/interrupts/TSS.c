@@ -2,7 +2,7 @@
 #include "interrupts.h"
 #include <stdint.h>
 
-struct __attribute__((packed)) TSS_t {
+struct __attribute__((packed)) __attribute__((aligned(16))) TSS_t {
   uint32_t reserved0;
   uint64_t rsp0; // Kernel stack pointer (ring 0)
   uint64_t rsp1;
@@ -41,11 +41,10 @@ struct __attribute__((aligned(16))) __attribute__((packed)) TSSDescriptor {
 __attribute__((aligned(4096))) uint8_t stack_int3[STACK_SIZE];
 __attribute__((aligned(4096))) uint8_t stack_int2[STACK_SIZE];
 __attribute__((aligned(4096))) uint8_t stack_int1[STACK_SIZE];
-
 __attribute__((aligned(4096))) uint8_t stack_kernel[STACK_SIZE];
 
 // the TSS
-struct __attribute__((aligned(16))) TSS_t tss = {
+struct TSS_t tss = {
     .rsp0 = (uint64_t)(stack_kernel + STACK_SIZE), // Kernel stack (ring 0)
     .rsp1 = (uint64_t)(stack_kernel + STACK_SIZE), // Kernel stack (ring 0)
     .rsp2 = (uint64_t)(stack_kernel + STACK_SIZE), // Kernel stack (ring 0)

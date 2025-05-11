@@ -3,7 +3,7 @@
 #include "interrupts.h"
 #include "multiboot.h"
 #include "printer.h"
-#include "serial.h"
+#include "rejigger_paging.h"
 #include "vga_textbox.h"
 
 extern run_result_t ps2_rx_task(void *s);
@@ -37,9 +37,14 @@ void kernel_main() {
 
   // generate free memory list
   fiftytwo_card_pickup();
+  testPageAllocator(); // TODO: the requested demo
+
+  regenerate_page_tables();
+  printk("regenerated page tablets\n");
+
   // now ps2 is set up and you should be rxing keeb interrupts
   spawn_task(ps2_rx_task, NULL, NULL);
-  printk("hardware ps2 enabled, interrupts not enabled yet\n");
+  printk("hardware ps2 enabled\n");
 
   // initialize hardware serial
   spawn_task(hw_serial_task, NULL, hw_serial_init);
