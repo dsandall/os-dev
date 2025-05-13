@@ -131,6 +131,9 @@ void testPageAllocator_stresstest() {
   // page
   int pagenum = 0;
   uint64_t allpages[70000];
+
+  // WARN: STACK OVERFLOWING HERE
+
   // for (int i = 0; i < 70000; i++) {
   //   allpages[i] = 0;
   // }

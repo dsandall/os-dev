@@ -64,6 +64,7 @@ void regenerate_page_tables() {
 
   __asm__ volatile("mov %0, %%cr3" ::"r"((uint64_t)p4_table) : "memory");
 
+  // sanity check, make copy and reload it to the reg
   uint64_t cr3_copy;
   __asm__ volatile("mov %%cr3, %0" : "=r"(cr3_copy));
   __asm__ volatile("mov %0, %%cr3" ::"r"((uint64_t)cr3_copy) : "memory");
