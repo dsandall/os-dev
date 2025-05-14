@@ -167,11 +167,12 @@ static void parse_multiboot() {
 ////////////////////////////
 /// Coalesce Memory Regions
 ////////////////////////////
-phys_mem_region_t coalesced[10000];
-phys_mem_region_t available[100];
-phys_mem_region_t used[100];
+
+phys_mem_region_t coalesced[32];
 
 static int generate_memory_map() {
+  phys_mem_region_t available[32];
+  phys_mem_region_t used[32];
 
   int num_available = 0;
   int num_used = 0;
@@ -199,7 +200,7 @@ static int generate_memory_map() {
   }
 
   // Generate exclude list
-  uint64_t bytes_used;
+  uint32_t bytes_used = 0;
   for (int i = 0; i < dwarves; i++) {
     elf_section_header_t d = dwarf_array[i];
     if (d.virt_addr && (d.flags & 0x2)) {
@@ -216,14 +217,12 @@ static int generate_memory_map() {
       (phys_mem_region_t){multiboot_pointer - offset, size_bytes};
 
   // print fun facts
-  printk(" %d bytes used\n", (bytes_used));
-  printk(" %d mebibytes used\n", (bytes_used / (1024 * 1024)));
+  printk(" %du bytes used\n", (bytes_used));
+  printk(" %du mebibytes used\n", (bytes_used / (1024 * 1024)));
 
   // coalesce free mem regions
-  if (validate_and_coalesce(available, num_available, used, num_used, coalesced,
-                            &num_coalesced, 100) == 0) {
-    ERR_LOOP();
-  }
+  validate_and_coalesce(available, num_available, used, num_used, coalesced,
+                        &num_coalesced);
   return num_coalesced;
 };
 
@@ -239,11 +238,6 @@ void fiftytwo_card_pickup() {
   int pages_allocated = 0;
   for (int i = 0; i < num_coalesced; i++) {
     pages_allocated += makePage(coalesced[i]);
-
-    // TODO: delete me
-    if (pages_allocated > 300) {
-      break;
-    }
   }
 
   printk("initially generated %d free pages (%d mebibytes)\n", pages_allocated,

@@ -37,7 +37,8 @@ void kernel_main() {
 
   // generate free memory list
   fiftytwo_card_pickup();
-  testPageAllocator(); // TODO: the requested demo
+  testPageAllocator(); // TODO: the requested demo for physical pages
+  testPageAllocator(); // TODO: the requested demo for physical pages
 
   regenerate_page_tables();
   printk("regenerated page tablets\n");

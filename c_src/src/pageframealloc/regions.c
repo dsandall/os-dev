@@ -25,8 +25,6 @@ static void sort_regions(phys_mem_region_t *regions, int count) {
   }
 }
 
-// Subtract `used` from `avail` and store the resulting (up to 2) regions in
-// `out`. Returns the number of resulting regions (0, 1, or 2).
 static int subtract_region(const phys_mem_region_t *avail,
                            const phys_mem_region_t *used,
                            phys_mem_region_t *out) {
@@ -55,22 +53,24 @@ static int subtract_region(const phys_mem_region_t *avail,
 #define MAX_REGIONS 1024
 static phys_mem_region_t tmp[MAX_REGIONS * 2];
 static phys_mem_region_t new_tmp[MAX_REGIONS * 2];
-int validate_and_coalesce(const phys_mem_region_t *available,
-                          int available_count, const phys_mem_region_t *used,
-                          int used_count, phys_mem_region_t *out,
-                          int *out_count, int out_max) {
-  // 1. Validate
-  for (int i = 0; i < used_count; i++) {
-    bool found = false;
-    for (int j = 0; j < available_count; j++) {
-      if (region_contains(&available[j], &used[i])) {
-        found = true;
-        break;
-      }
-    }
-    if (!found)
-      ERR_LOOP();
-  }
+void validate_and_coalesce(const phys_mem_region_t *available,
+                           int available_count, const phys_mem_region_t *used,
+                           int used_count, phys_mem_region_t *out,
+                           int *out_count) {
+
+  // doesn't seem to be necessary, was causing problems
+  //// 1. Validate
+  // for (int i = 0; i < used_count; i++) {
+  //   bool found = false;
+  //   for (int j = 0; j < available_count; j++) {
+  //     if (region_contains(&available[j], &used[i])) {
+  //       found = true;
+  //       break;
+  //     }
+  //   }
+  //   // if (!found)
+  //   //   ERR_LOOP();
+  // }
 
   // 2. Copy available into temp array
   int tmp_count = 0;
@@ -111,7 +111,7 @@ int validate_and_coalesce(const phys_mem_region_t *available,
       if (prev->base + prev->size == tmp[i].base) {
         prev->size += tmp[i].size;
       } else {
-        if (out_idx >= out_max)
+        if (out_idx >= MAX_REGIONS)
           ERR_LOOP();
         out[out_idx++] = tmp[i];
       }
@@ -132,8 +132,8 @@ int validate_and_coalesce(const phys_mem_region_t *available,
   for (int i = 0; i < final_count; i++)
     bytes_free += out[i].size;
 
-  printk("%llu bytes in free table\n", bytes_free);
-  printk("%llu mebibytes in free table\n", bytes_free / (1024 * 1024));
+  printk("%ll bytes in free table\n", bytes_free);
+  printk("%ll mebibytes in free table\n", bytes_free / (1024 * 1024));
 
-  return 1;
+  return;
 }

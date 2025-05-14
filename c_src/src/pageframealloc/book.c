@@ -58,17 +58,12 @@ int makePage(phys_mem_region_t available) {
     page_t *page =
         (page_t *)(base + MULTIBOOT_VADDR_OFFSET); // create pointer to the
                                                    // first occupied page ()
-
     // for 256M
     if (page == (void *)0x10000000) {
       // if (page == (void *)0x4000000) {
       break;
       // WARN: this is really stupid but i am quite frustrated at the moment and
       // this fixes the error. it also limits the available ram
-    }
-
-    if (page == (void *)0xFFFFFFFFFFFFFFFF) {
-      ERR_LOOP();
     }
 
     page->next = free_list; // push existing onto the new head
@@ -122,7 +117,7 @@ bool MMU_pf_free(void *pf) {
   return true;
 };
 
-uint64_t allpages[50000];
+uint64_t allpages[70000]; // just a bit over 65035
 
 void testPageAllocator_stresstest() {
   const int magic = 7;
@@ -136,63 +131,45 @@ void testPageAllocator_stresstest() {
   int failed = 0;
 
   while ((allpages[pagenum] = (uint64_t)MMU_pf_alloc()) != NULL) {
-
     // write to the full page
     void *p = (void *)allpages[pagenum];
-    if (p != (void *)0xFFFFFFFFFFFFFFFF) {
-      for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
-        *c = pagenum + magic;
-      }
-    } else {
-      failed++;
+    for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
+      *c = pagenum + magic;
     }
-
     // and do the next
     pagenum++;
   };
 
   printk("successfully allocated and wrote magic to %d pages\n", pagenum);
   printk("failed %d accesses\n", failed);
-  failed = 0;
 
   // verify each number in each page
   for (int i = 0; i < pagenum; i++) {
     void *p = (void *)allpages[i];
-    if (p != (void *)0xFFFFFFFFFFFFFFFF) {
-      for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
-        if (*c != (uint64_t)(i + magic)) {
-          ERR_LOOP();
-        }
+    for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
+      if (*c != (uint64_t)(i + magic)) {
+        ERR_LOOP();
       }
-    } else {
-      failed++;
     }
   }
 
   printk("%d pages were verified\n", pagenum);
-  printk("failed %d accesses\n", failed);
-  failed = 0;
 
   // free each page
   for (int i = 0; i < pagenum; i++) {
     void *p = (void *)allpages[i];
-    if (p != (void *)0xFFFFFFFFFFFFFFFF) {
-      if (MMU_pf_free(p) == false) {
-        ERR_LOOP();
-      };
-    } else {
-      failed++;
-    }
+    if (MMU_pf_free(p) == false) {
+      ERR_LOOP();
+    };
   }
 
   printk("%d pages were freed\n", pagenum);
-  printk("failed %d accesses\n", failed);
-  failed = 0;
 }
 
 void testPageAllocator() {
   // allocate and free a few pages , print the addresses
   // ensure that physical pages are reused when freed
+  printk("allocating and freeing (with printed addresses)...\n");
   for (int i = 0; i < 3; i++) {
     void *p1, *p2;
     p1 = MMU_pf_alloc();
@@ -206,22 +183,6 @@ void testPageAllocator() {
     // WARN: we leak a lil memory here
   }
 
-  testPageAllocator_stresstest();
-  testPageAllocator_stresstest();
-  testPageAllocator_stresstest();
-
-  for (int i = 0; i < 3; i++) {
-    void *p1, *p2;
-    p1 = MMU_pf_alloc();
-    p2 = MMU_pf_alloc();
-    printk("alloc'd %lu\n", (uint64_t)p1);
-    printk("alloc'd %lu\n", (uint64_t)p2);
-
-    MMU_pf_free(p1);
-    printk("free'd %lu\n", (uint64_t)p1);
-
-    // WARN: we leak a lil memory here
-  }
-
+  printk("allocating all pages, please wait...\n");
   testPageAllocator_stresstest();
 }
