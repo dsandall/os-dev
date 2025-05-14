@@ -24,6 +24,7 @@ layout src
 #break testPageAllocator
 #break makePage
 break testPageAllocator_stresstest
+break validate_and_coalesce
 
 break yeetr
 disp/x skibiditol

@@ -60,8 +60,8 @@ int makePage(phys_mem_region_t available) {
                                                    // first occupied page ()
 
     // for 256M
-    // if (page == (void *)0x10000000) {
-    if (page == (void *)0x4000000) {
+    if (page == (void *)0x10000000) {
+      // if (page == (void *)0x4000000) {
       break;
       // WARN: this is really stupid but i am quite frustrated at the moment and
       // this fixes the error. it also limits the available ram
@@ -122,6 +122,8 @@ bool MMU_pf_free(void *pf) {
   return true;
 };
 
+uint64_t allpages[50000];
+
 void testPageAllocator_stresstest() {
   const int magic = 7;
   // stress test by allocating all pages, writing something unique to the full
@@ -129,14 +131,8 @@ void testPageAllocator_stresstest() {
 
   // allocate as many pages as you can, record all pointers, write magic to full
   // page
+
   int pagenum = 0;
-  uint64_t allpages[70000];
-
-  // WARN: STACK OVERFLOWING HERE
-
-  // for (int i = 0; i < 70000; i++) {
-  //   allpages[i] = 0;
-  // }
   int failed = 0;
 
   while ((allpages[pagenum] = (uint64_t)MMU_pf_alloc()) != NULL) {

@@ -167,19 +167,22 @@ static void parse_multiboot() {
 ////////////////////////////
 /// Coalesce Memory Regions
 ////////////////////////////
-static void generate_memory_map(phys_mem_region_t coalesced[100],
-                                int *num_coalesced) {
-  phys_mem_region_t available[64];
-  phys_mem_region_t used[64];
+phys_mem_region_t coalesced[10000];
+phys_mem_region_t available[100];
+phys_mem_region_t used[100];
+
+static int generate_memory_map() {
+
   int num_available = 0;
   int num_used = 0;
+  int num_coalesced = 0;
 
   // generate include list
-  uint64_t bytes_available;
+  uint64_t bytes_available = 0;
   for (int i = 0; i < e; i++) {
     mem_map_entry_t m = entries[i];
     if (m.type == 1) {
-      m.base_addr;
+      // m.base_addr;
       bytes_available += m.length;
       available[num_available++] = (phys_mem_region_t){m.base_addr, m.length};
     }
@@ -218,9 +221,10 @@ static void generate_memory_map(phys_mem_region_t coalesced[100],
 
   // coalesce free mem regions
   if (validate_and_coalesce(available, num_available, used, num_used, coalesced,
-                            num_coalesced, 100) == 0) {
+                            &num_coalesced, 100) == 0) {
     ERR_LOOP();
   }
+  return num_coalesced;
 };
 
 void fiftytwo_card_pickup() {
@@ -228,9 +232,7 @@ void fiftytwo_card_pickup() {
   parse_multiboot();
 
   // generate clean list of non-kernel available memory
-  phys_mem_region_t coalesced[100];
-  int num_coalesced;
-  generate_memory_map(coalesced, &num_coalesced);
+  int num_coalesced = generate_memory_map();
 
   // turn each coalesced region into pages and add to free list (stored in
   // memory , on pages)
@@ -238,6 +240,7 @@ void fiftytwo_card_pickup() {
   for (int i = 0; i < num_coalesced; i++) {
     pages_allocated += makePage(coalesced[i]);
 
+    // TODO: delete me
     if (pages_allocated > 300) {
       break;
     }
