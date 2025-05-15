@@ -6,7 +6,6 @@ static printfunction pc_fn = NULL;
 static inline void printc_fn(char c) {
   if (pc_fn == NULL) {
     ERR_LOOP();
-    //  WARN: were gonna allow this for now
   } else {
     pc_fn(c);
   }

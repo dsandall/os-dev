@@ -58,11 +58,10 @@ int makePage(phys_mem_region_t available) {
     page_t *page =
         (page_t *)(base + MULTIBOOT_VADDR_OFFSET); // create pointer to the
                                                    // first occupied page ()
-    // for 256M
+                                                   // for 256M
     if (page == (void *)0x10000000) {
-      // if (page == (void *)0x4000000) {
       break;
-      // WARN: this is really stupid but i am quite frustrated at the moment and
+      // WARN: this is really stupid but i am quite frustrated at the moment
       // this fixes the error. it also limits the available ram
     }
 

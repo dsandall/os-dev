@@ -22,6 +22,10 @@ typedef struct position {
   while (1) {                                                                  \
   }
 
+static __inline int div_round_up(int numerator, int denominator) {
+  return (numerator + denominator - 1) / denominator;
+}
+
 //////////////
 // Port IO
 //////////////

@@ -132,8 +132,9 @@ void validate_and_coalesce(const phys_mem_region_t *available,
   for (int i = 0; i < final_count; i++)
     bytes_free += out[i].size;
 
-  printk("%ll bytes in free table\n", bytes_free);
-  printk("%ll mebibytes in free table\n", bytes_free / (1024 * 1024));
+  printk("%d bytes in free table\n", bytes_free);
+  printk("%d mebibytes in free table\n",
+         div_round_up(bytes_free, (1024 * 1024)));
 
   return;
 }

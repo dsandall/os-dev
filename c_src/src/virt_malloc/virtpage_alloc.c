@@ -9,7 +9,7 @@ void *MMU_alloc_page() {
   //
 
   // find free virt addr
-  //
+  // TODO:
 };
 
 void MMU_free_page(void *) {
@@ -18,6 +18,7 @@ void MMU_free_page(void *) {
   // - free the associated physical page
   // - remove vaddr entry from page tables
   // - no need to free the vaddr, consider it dead
+  // TODO:
 };
 
 ///////////////////
