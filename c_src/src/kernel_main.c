@@ -37,8 +37,6 @@ void kernel_main() {
 
   // generate free memory list
   fiftytwo_card_pickup();
-  testPageAllocator(); // TODO: the requested demo for physical pages
-  testPageAllocator(); // TODO: the requested demo for physical pages
 
   regenerate_page_tables();
   printk("regenerated page tablets\n");
@@ -57,9 +55,6 @@ void kernel_main() {
 
   // Prepare to enter the matrix (by that I mean the async polling system)
   RESUME(true);
-
-  // NOTE: force general protection fault, just to show that it switches stacks
-  //__asm__("int $0x0D");
 
   while (1) {
     run_tasks();

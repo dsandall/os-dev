@@ -68,22 +68,10 @@ typedef struct {
   uint64_t entry_size;    // bytes
 } elf_section_header_t;
 
-static uint64_t dwarves;
-static elf_section_header_t dwarf_array[100];
-static int shndx;
-
-static char *ret_name_string_by_index(int i) {
-  int offset = dwarf_array[i].name_string_offset;
-  printk("offset: %d\n", offset);
-
-  char *string_blob = (char *)&dwarf_array[shndx];
-  return &string_blob[offset];
-}
-
-static void parse_elf_section_headers(mb_tag_header_t *header) {
+static uint64_t parse_elf_section_headers(mb_tag_header_t *header,
+                                          elf_section_header_t *dwarf_array) {
 
   elf_tag_t *tag = (elf_tag_t *)header;
-  shndx = tag->shndx;
 
   if (sizeof(elf_section_header_t) != tag->entry_size) {
     ERR_LOOP();
@@ -92,10 +80,13 @@ static void parse_elf_section_headers(mb_tag_header_t *header) {
   elf_section_header_t *entry =
       (elf_section_header_t *)((void *)tag + sizeof(*tag));
 
+  uint64_t dwarves = 0;
   // for "elf section header" in entries....
   for (; dwarves < tag->num_entries;) {
     dwarf_array[dwarves++] = *entry++;
   }
+
+  return dwarves;
 };
 
 ////////////////////////////
@@ -118,7 +109,7 @@ static void parse_mem_maps(mb_tag_header_t *header) {
   }
 };
 
-static void parse_multiboot() {
+static uint64_t parse_multiboot(elf_section_header_t *dwarf_array) {
   if (MULTIBOOT2_BOOTLOADER_MAGIC != multiboot_magic) {
     ERR_LOOP();
   }
@@ -131,6 +122,7 @@ static void parse_multiboot() {
   }
 
   mb_tag_header_t *next_tag = (void *)&b[2];
+  uint64_t dwarves;
 
   while ((void *)next_tag < (((void *)b) + size_bytes)) {
 
@@ -149,7 +141,7 @@ static void parse_multiboot() {
       parse_mem_maps(header);
     } break;
     case ELF_SYMBOLS: {
-      parse_elf_section_headers(header);
+      dwarves = parse_elf_section_headers(header, dwarf_array);
     } break;
     case BOOT_CLI:
     case MODULES:
@@ -162,6 +154,8 @@ static void parse_multiboot() {
       break;
     }
   }
+
+  return dwarves;
 }
 
 ////////////////////////////
@@ -170,7 +164,8 @@ static void parse_multiboot() {
 
 phys_mem_region_t coalesced[32];
 
-static int generate_memory_map() {
+static int generate_memory_map(uint64_t dwarves,
+                               elf_section_header_t *dwarf_array) {
   phys_mem_region_t available[32];
   phys_mem_region_t used[32];
 
@@ -196,6 +191,7 @@ static int generate_memory_map() {
   if (offset != MULTIBOOT_VADDR_OFFSET) {
     // NOTE: this offset should be constant and determined by the page mapping
     // at boot
+    printk("err %l\n", offset);
     ERR_LOOP();
   }
 
@@ -226,12 +222,16 @@ static int generate_memory_map() {
   return num_coalesced;
 };
 
+uint64_t dwarves;
+elf_section_header_t dwarf_array[100];
+
 void fiftytwo_card_pickup() {
+
   // parse the mb header and collect entries
-  parse_multiboot();
+  dwarves = parse_multiboot(dwarf_array);
 
   // generate clean list of non-kernel available memory
-  int num_coalesced = generate_memory_map();
+  int num_coalesced = generate_memory_map(dwarves, dwarf_array);
 
   // turn each coalesced region into pages and add to free list (stored in
   // memory , on pages)
@@ -243,5 +243,7 @@ void fiftytwo_card_pickup() {
   printk("initially generated %d free pages (%d mebibytes)\n", pages_allocated,
          (pages_allocated * PAGE_SIZE / (1024 * 1024)));
 
-  testPageAllocator_stresstest();
+  // testPageAllocator_stresstest();
+  // testPageAllocator_stresstest();
+  // testPageAllocator_stresstest();
 }
