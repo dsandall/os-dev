@@ -213,8 +213,8 @@ static int generate_memory_map(uint64_t dwarves,
       (phys_mem_region_t){multiboot_pointer - offset, size_bytes};
 
   // print fun facts
-  printk(" %du bytes used\n", (bytes_used));
-  printk(" %du mebibytes used\n", (bytes_used / (1024 * 1024)));
+  printk(" %d bytes used\n", (bytes_used));
+  printk(" %d mebibytes used\n", div_round_up(bytes_used, (1024 * 1024)));
 
   // coalesce free mem regions
   validate_and_coalesce(available, num_available, used, num_used, coalesced,
@@ -241,7 +241,7 @@ void fiftytwo_card_pickup() {
   }
 
   printk("initially generated %d free pages (%d mebibytes)\n", pages_allocated,
-         (pages_allocated * PAGE_SIZE / (1024 * 1024)));
+         div_round_up(pages_allocated * PAGE_SIZE, (1024 * 1024)));
 
   // testPageAllocator_stresstest();
   // testPageAllocator_stresstest();
