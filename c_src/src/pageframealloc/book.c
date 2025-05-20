@@ -32,7 +32,7 @@ typedef struct recursive_page {
 
 static page_t *free_list = NULL;
 
-int makePage(phys_mem_region_t available) {
+int makePhysPage(phys_mem_region_t available) {
 
   uintptr_t initial_base =
       (available.base + PAGE_SIZE - 1) &
@@ -116,6 +116,7 @@ bool MMU_pf_free(void *pf) {
   return true;
 };
 
+#define PHYSICAL_ALLOCATOR_STRESSTEST
 #undef PHYSICAL_ALLOCATOR_STRESSTEST
 #ifdef PHYSICAL_ALLOCATOR_STRESSTEST
 uint64_t allpages[70000]; // just a bit over 65035

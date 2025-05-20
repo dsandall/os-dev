@@ -5,9 +5,9 @@ global start
 extern long_mode_start
 
 ; initial kernel page tables and stack
-extern p4_table
-extern p3_table
-extern p2_table
+extern kernel_p4_table
+extern kernel_p3_table
+extern identity_p2_table
 extern stack_kernel
 
 ; data passed by grub
@@ -128,14 +128,14 @@ check_long_mode:
 ; https://os.phil-opp.com/entering-longmode/#set-up-identity-paging
 set_up_page_tables:
     ; map first P4 entry to P3 table
-    mov eax, p3_table
+    mov eax, kernel_p3_table
     or eax, 0b11 ; present + writable
-    mov [p4_table], eax
+    mov [kernel_p4_table], eax
 
     ; map first P3 entry to P2 table
-    mov eax, p2_table
+    mov eax, identity_p2_table
     or eax, 0b11 ; present + writable
-    mov [p3_table], eax
+    mov [kernel_p3_table], eax
 
 ;;; Inner Loop: map each P2 entry to a huge 2MiB page
     mov ecx, 0         ; init counter variable
@@ -144,7 +144,7 @@ set_up_page_tables:
     mov eax, 0x200000  ; 2MiB
     mul ecx            ; start address of ecx-th page
     or eax, 0b10000011 ; present + writable + huge
-    mov [p2_table + ecx * 8], eax ; map ecx-th entry
+    mov [identity_p2_table + ecx * 8], eax ; map ecx-th entry
 
     inc ecx            ; increase counter
     cmp ecx, 512       ; if counter == 512, the whole P2 table is mapped
@@ -157,7 +157,7 @@ set_up_page_tables:
 ;
 enable_paging:
     ; load P4 to cr3 register (cpu uses this to access the P4 table)
-    mov eax, p4_table
+    mov eax, kernel_p4_table
     mov cr3, eax
 
     ; enable PAE-flag in cr4 (Physical Address Extension)

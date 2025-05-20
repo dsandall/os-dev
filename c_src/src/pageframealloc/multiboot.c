@@ -241,7 +241,7 @@ void fiftytwo_card_pickup() {
   // memory , on pages)
   int pages_allocated = 0;
   for (int i = 0; i < num_coalesced; i++) {
-    pages_allocated += makePage(coalesced[i]);
+    pages_allocated += makePhysPage(coalesced[i]);
   }
 
   printk("initially generated %d free pages (%d mebibytes)\n", pages_allocated,

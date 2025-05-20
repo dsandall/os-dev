@@ -16,10 +16,10 @@
 #define L4_ENTRIES 1
 #define L3_ENTRIES 1
 #define L2_ENTRIES 512
-// #define L1_ENTRIES 512
-__attribute__((aligned(4096))) uint64_t p4_table[L4_ENTRIES]; // PML4 top level
-__attribute__((aligned(4096))) uint64_t p3_table[L3_ENTRIES]; // PDPT
-__attribute__((aligned(4096))) uint64_t p2_table[L2_ENTRIES]; // PD
+uint64_t kernel_p4_table[L4_ENTRIES] __attribute__((aligned(4096)));
+uint64_t kernel_p3_table[L3_ENTRIES] __attribute__((aligned(4096)));   // PDPT
+uint64_t identity_p2_table[L2_ENTRIES] __attribute__((aligned(4096))); // PD
+
 //////////////////////////////////////////////////////////////////
 
 typedef union {
@@ -44,7 +44,9 @@ typedef union {
     uint64_t : 12;
   };
 } page_table_entry_t;
+
 //////////////////////////////////////////////////////////////////
+
 void regenerate_page_tables() {
   // uint64_t *kernel_pml4 = create_page_table();
 
@@ -55,7 +57,8 @@ void regenerate_page_tables() {
   // update the cpu reg that points to the master page table
   // (this should not change anything in theory, as the asm boot stub sets cr3
   // to this p4 table anyway)
-  __asm__ volatile("mov %0, %%cr3" ::"r"((uint64_t)p4_table) : "memory");
+
+  // __asm__ volatile("mov %0, %%cr3" ::"r"((uint64_t)p4_table) : "memory");
 
   // sanity check, make copy and reload it to the reg
   uint64_t cr3_copy;
@@ -64,7 +67,9 @@ void regenerate_page_tables() {
 
   return;
 }
+
 //////////////////////////////////////////////////////////////////
+
 #define walk(p) ((page_table_entry_t *)(p.p_addr4k << 12))
 phys_addr from_virtual(virt_addr_t v) {
 
