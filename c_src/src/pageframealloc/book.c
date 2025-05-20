@@ -116,6 +116,8 @@ bool MMU_pf_free(void *pf) {
   return true;
 };
 
+#undef PHYSICAL_ALLOCATOR_STRESSTEST
+#ifdef PHYSICAL_ALLOCATOR_STRESSTEST
 uint64_t allpages[70000]; // just a bit over 65035
 
 void testPageAllocator_stresstest() {
@@ -164,6 +166,7 @@ void testPageAllocator_stresstest() {
 
   printk("%d pages were freed\n", pagenum);
 }
+#endif
 
 void testPageAllocator() {
   // allocate and free a few pages , print the addresses
@@ -182,6 +185,11 @@ void testPageAllocator() {
     // WARN: we leak a lil memory here
   }
 
+#ifndef PHYSICAL_ALLOCATOR_STRESSTEST
+  printk("stresstest is not enabled\n");
+#else
+  printk("stresstest is enabled\n");
   printk("allocating all pages, please wait...\n");
   testPageAllocator_stresstest();
+#endif
 }

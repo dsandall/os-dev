@@ -20,6 +20,7 @@ typedef struct position {
 
 #define ERR_LOOP()                                                             \
   while (1) {                                                                  \
+    asm("hlt");                                                                \
   }
 
 static __inline int div_round_up(int numerator, int denominator) {

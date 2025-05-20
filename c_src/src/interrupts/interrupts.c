@@ -101,7 +101,8 @@ void pageFault_handler() {
   uint64_t cr3_copy, cr2_copy;
   __asm__ volatile("mov %%cr3, %0" : "=r"(cr3_copy));
   __asm__ volatile("mov %%cr2, %0" : "=r"(cr2_copy));
-  printk("Page fault\n");
+  printk("Page fault:\n\tfaulty addr:%lx\n\tpage table in use:%lx\n", cr2_copy,
+         cr3_copy);
   ERR_LOOP();
 }
 

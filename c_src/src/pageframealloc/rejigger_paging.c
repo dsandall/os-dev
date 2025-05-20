@@ -1,67 +1,55 @@
+#include "rejigger_paging.h"
 #include "book.h"
-#include "freestanding.h"
-#define PAGE_PRESENT 0x1ULL
-#define PAGE_RW 0x2ULL
-#define PAGE_SIZE_FLAG 0x80ULL
+#include "multiboot.h"
+#include <stdint.h>
 
+// Static page tables (only for kernel initial boot) (only the first entry in p4
+// is used for vaddr mapping)
+//
+// at boot we have:
+// one entry in the p4, pointing to p3
+// one entry in the p3, pointing to p2
+// 512 entries in the p2, with valid entries:
+//
+//
 #define L4_ENTRIES 512
 #define L3_ENTRIES 512
 #define L2_ENTRIES 512
 #define L1_ENTRIES 512
-
-// Static page tables (only for kernel initial boot) (only the first entry in p4
-// is used for vaddr mapping)
 __attribute__((aligned(4096))) uint64_t p4_table[L4_ENTRIES]; // PML4 top level
 __attribute__((aligned(4096))) uint64_t p3_table[L3_ENTRIES]; // PDPT
 __attribute__((aligned(4096))) uint64_t p2_table[L2_ENTRIES]; // PD
+//////////////////////////////////////////////////////////////////
 
-// test
-//__attribute__((aligned(4096))) uint64_t pml4[1]; // PML4 top level
-//__attribute__((aligned(
-//    4096))) uint64_t pml3[L3_ENTRIES]; // PDPT // WARN: should be 2d array
-//__attribute__((aligned(4096))) uint64_t pml2[L3_ENTRIES][L2_ENTRIES]; // PD
-//__attribute__((
-//    aligned(4096))) uint64_t pml1[L3_ENTRIES][L2_ENTRIES][L1_ENTRIES]; // PT
-
-// uint64_t *create_page_table() {
-//
-//   // we can start by populating the first entry in the top level table as
-//   // identity map
-//   //
-//   uint64_t i4 = 0;
-//   pml4[i4] = (uint64_t)&pml3[i4] | PAGE_PRESENT | PAGE_RW;
-//
-//   // and recursively fill all other lower layers
-//   for (int i3 = 0; i3 < L3_ENTRIES; i3++) {
-//     // point each entry of the l3 table to the start of an l2 table
-//     pml3[i3] = (uint64_t)&pml2[i3] | PAGE_PRESENT | PAGE_RW;
-//
-//     for (int i2 = 0; i2 < L2_ENTRIES; i2++) {
-//       // point each entry of the l2 table to the start of an l1 table
-//       pml2[i3][i2] = (uint64_t)&(pml1[i3][i2]) | PAGE_PRESENT | PAGE_RW;
-//
-//       for (int i1 = 0; i1 < L1_ENTRIES; i1++) {
-//         // point each entry of the l1 table to the actual associated physical
-//         // page
-//         uint64_t phys_addr = 0 << 9;
-//         phys_addr = (phys_addr | i3) << 9;
-//         phys_addr = (phys_addr | i2) << 9;
-//         phys_addr = (phys_addr | i1) << 9;
-//         phys_addr = (phys_addr) << 12;
-//         pml1[i3][i2][i1] = phys_addr;
-//       }
-//     }
-//   }
-//   return pml4;
-// }
-
+typedef union {
+  uint64_t raw;
+  struct {
+    uint64_t present : 1; // Bit 0
+    uint64_t rw : 1;      // Read/write
+    uint64_t : 5;
+    uint64_t pse_or_pat : 1; // PAT on PTE, PSE on PDE
+    uint64_t : 4;
+    phys_addr p_addr4k : 40;
+    uint64_t : 12;
+  };
+  struct {
+    uint64_t : OFFSET_2M;
+    phys_addr p_addr_2m : 31;
+    uint64_t : 12;
+  };
+  struct {
+    uint64_t : OFFSET_1G;
+    phys_addr p_addr_1g : 22;
+    uint64_t : 12;
+  };
+} page_table_entry_t;
+//////////////////////////////////////////////////////////////////
 void regenerate_page_tables() {
   // uint64_t *kernel_pml4 = create_page_table();
 
   // update the cpu reg that points to the master page table
-  // TODO: update me when switching to user mode, as each process should have
-  // its own set of page tables
-
+  // (this should not change anything in theory, as the asm boot stub sets cr3
+  // to this p4 table anyway)
   __asm__ volatile("mov %0, %%cr3" ::"r"((uint64_t)p4_table) : "memory");
 
   // sanity check, make copy and reload it to the reg
@@ -70,4 +58,45 @@ void regenerate_page_tables() {
   __asm__ volatile("mov %0, %%cr3" ::"r"((uint64_t)cr3_copy) : "memory");
 
   return;
+}
+//////////////////////////////////////////////////////////////////
+#define walk(p) ((page_table_entry_t *)(p.p_addr4k << 12))
+phys_addr from_virtual(virt_addr_t v) {
+
+  // WARN: might need to handle this differently in future
+  page_table_entry_t *pml4;
+  __asm__ volatile("mov %%cr3, %0" : "=r"(pml4));
+
+  // Walk PML4
+  page_table_entry_t pml4e = pml4[v.pml4_idx];
+  if (!(pml4e.present))
+    ERR_LOOP();
+
+  // Walk PDPT
+  page_table_entry_t pdpte = walk(pml4e)[v.pdpt_idx];
+  if (!(pdpte.present))
+    ERR_LOOP();
+  if (pdpte.pse_or_pat) {
+    // 1 GiB page (optional, not requested, but good to include)
+    printk("is 1gb page\n");
+    return (phys_addr)(pdpte.p_addr_1g << OFFSET_1G) + v.offset_1g;
+  }
+
+  // Walk PD
+  page_table_entry_t pde = walk(pdpte)[v.pd_idx];
+  if (!(pde.present))
+    ERR_LOOP();
+  if (pde.pse_or_pat) {
+    // 2 MiB page
+    printk("is 2mib page\n");
+    return (phys_addr)(pde.p_addr_2m << OFFSET_2M) + v.offset_2m;
+  }
+
+  // Walk PT
+  page_table_entry_t pte = walk(pde)[v.pt_idx];
+  if (!(pte.present))
+    ERR_LOOP();
+
+  printk("is 4kib page\n");
+  return (phys_addr)(pte.p_addr4k << OFFSET_4K) + v.offset_4k;
 }

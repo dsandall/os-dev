@@ -5,6 +5,7 @@
 #include "printer.h"
 #include "rejigger_paging.h"
 #include "vga_textbox.h"
+#include <stdint.h>
 
 extern run_result_t ps2_rx_task(void *s);
 
@@ -39,8 +40,15 @@ void kernel_main() {
   fiftytwo_card_pickup();
 
   regenerate_page_tables();
-  printk("regenerated page tablets\n");
 
+  uint32_t junk = 0;
+  virt_addr_t v;
+  v.raw = (uint64_t)&junk;
+  phys_addr p = from_virtual(v);
+  printk("regenerated page tablets\n");
+  if (p != v.raw) {
+    ERR_LOOP();
+  }
   // now ps2 is set up and you should be rxing keeb interrupts
   spawn_task(ps2_rx_task, NULL, NULL);
   printk("hardware ps2 enabled\n");
