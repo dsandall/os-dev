@@ -138,7 +138,7 @@ set_up_page_tables:
     mov [p3_table], eax
 
 ;;; Inner Loop: map each P2 entry to a huge 2MiB page
-    mov ecx, 0         ; counter variable
+    mov ecx, 0         ; init counter variable
 .map_p2_table:
     ; map ecx-th P2 entry to a huge page that starts at address 2MiB*ecx
     mov eax, 0x200000  ; 2MiB

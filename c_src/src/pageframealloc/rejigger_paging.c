@@ -9,13 +9,14 @@
 // at boot we have:
 // one entry in the p4, pointing to p3
 // one entry in the p3, pointing to p2
-// 512 entries in the p2, with valid entries:
-//
-//
-#define L4_ENTRIES 512
-#define L3_ENTRIES 512
+// 512 2mb entries in the p2, for a total of 1 gib of ID mapped memory
+// (0x0-0x1F_FFFF ..... 0x3fe0_0000-0x3FFF_FFFF) (30 bits, the first 31 bit addr
+// is out of range, 0x4000_0000)
+
+#define L4_ENTRIES 1
+#define L3_ENTRIES 1
 #define L2_ENTRIES 512
-#define L1_ENTRIES 512
+// #define L1_ENTRIES 512
 __attribute__((aligned(4096))) uint64_t p4_table[L4_ENTRIES]; // PML4 top level
 __attribute__((aligned(4096))) uint64_t p3_table[L3_ENTRIES]; // PDPT
 __attribute__((aligned(4096))) uint64_t p2_table[L2_ENTRIES]; // PD
@@ -46,6 +47,10 @@ typedef union {
 //////////////////////////////////////////////////////////////////
 void regenerate_page_tables() {
   // uint64_t *kernel_pml4 = create_page_table();
+
+  // TODO: when redoing the identity map, unmap stuff that is outside the range
+  // of actual physical memory! otherwise, it will not trigger a page fault, but
+  // return gibberish
 
   // update the cpu reg that points to the master page table
   // (this should not change anything in theory, as the asm boot stub sets cr3

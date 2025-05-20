@@ -16,34 +16,15 @@
 uint32_t multiboot_pointer;
 uint32_t multiboot_magic;
 
+#define AVAILABLE_RAM_TYPE 1
+#define ARBITRARY_NUM 32
 #define MULTIBOOT2_BOOTLOADER_MAGIC 0x36d76289
-
-typedef enum : uint32_t {
-  BOOT_CLI = 1,         // Command-line string
-  BOOTLOADER_NAME = 2,  // Bootloader name
-  MODULES = 3,          // Loaded modules
-  MEMORY = 4,           // Basic memory info
-  DEVICE = 5,           // BIOS boot device
-  MEM_MAP = 6,          // Memory map
-  VBE_INFO = 7,         // VBE framebuffer info
-  FRAMEBUFFER_INFO = 8, // Framebuffer info (preferred over VBE)
-  ELF_SYMBOLS = 9,      // ELF section header table
-  APM_TABLE = 10        // APM BIOS table
-} mb_tag_t;
 
 typedef struct {
   uint32_t type;
   uint32_t size;
   // Followed by type-specific data
 } mb_tag_header_t;
-
-typedef struct {
-  uint64_t base_addr; // phys mem addr
-  uint64_t length;    // bytes
-  uint32_t
-      type; // (only use 1) 1:ram, 3:usable,with acpi, 4:swap, other:reserved
-  uint32_t reserved; // 0
-} mem_map_entry_t;
 
 ////////////////////////////
 /// ELF Parsing
@@ -92,10 +73,17 @@ static uint64_t parse_elf_section_headers(mb_tag_header_t *header,
 ////////////////////////////
 /// MEM_MAP Parsing (phys mem)
 ////////////////////////////
-static int e;
-static mem_map_entry_t entries[32];
+typedef struct {
+  uint64_t base_addr; // phys mem addr
+  uint64_t length;    // bytes
+  uint32_t
+      type; // (only use 1) 1:ram, 3:usable,with acpi, 4:swap, other:reserved
+  uint32_t reserved; // 0
+} mem_map_entry_t;
 
-static void parse_mem_maps(mb_tag_header_t *header) {
+static mem_map_entry_t phys_mem_entries[ARBITRARY_NUM];
+
+static uint64_t parse_mem_maps(mb_tag_header_t *header) {
   uint32_t *p = ((uint32_t *)header) + sizeof(*header) / sizeof(uint32_t);
   uint32_t entry_size = *(p++);
   uint32_t entry_version = *(p++);
@@ -103,13 +91,37 @@ static void parse_mem_maps(mb_tag_header_t *header) {
       (header->size - sizeof(mb_tag_header_t) - (sizeof(uint32_t) * 2)) /
       entry_size;
 
+  uint64_t e = 0;
   for (uint32_t i = 0; i < num_entries; i++) {
-    entries[e++] = *((mem_map_entry_t *)p);
+    phys_mem_entries[e++] = *((mem_map_entry_t *)p);
     p += 6;
   }
+
+  return num_entries;
 };
 
-static uint64_t parse_multiboot(elf_section_header_t *dwarf_array) {
+////////////////////////////
+/// Multiboot Parsing (available phys mem and elf entries)
+////////////////////////////
+typedef struct {
+  uint64_t dwarves;
+  uint64_t mem_entries;
+} parse_mb_t;
+
+typedef enum : uint32_t {
+  BOOT_CLI = 1,         // Command-line string
+  BOOTLOADER_NAME = 2,  // Bootloader name
+  MODULES = 3,          // Loaded modules
+  MEMORY = 4,           // Basic memory info
+  DEVICE = 5,           // BIOS boot device
+  MEM_MAP = 6,          // Memory map
+  VBE_INFO = 7,         // VBE framebuffer info
+  FRAMEBUFFER_INFO = 8, // Framebuffer info (preferred over VBE)
+  ELF_SYMBOLS = 9,      // ELF section header table
+  APM_TABLE = 10        // APM BIOS table
+} mb_tag_t;
+
+static parse_mb_t parse_multiboot(elf_section_header_t *dwarf_array) {
   if (MULTIBOOT2_BOOTLOADER_MAGIC != multiboot_magic) {
     ERR_LOOP();
   }
@@ -123,6 +135,7 @@ static uint64_t parse_multiboot(elf_section_header_t *dwarf_array) {
 
   mb_tag_header_t *next_tag = (void *)&b[2];
   uint64_t dwarves;
+  uint64_t mem_entries;
 
   while ((void *)next_tag < (((void *)b) + size_bytes)) {
 
@@ -138,7 +151,7 @@ static uint64_t parse_multiboot(elf_section_header_t *dwarf_array) {
       printk("bootloader is %s\n", ((uint8_t *)header) + 8);
       break;
     case MEM_MAP: {
-      parse_mem_maps(header);
+      mem_entries = parse_mem_maps(header);
     } break;
     case ELF_SYMBOLS: {
       dwarves = parse_elf_section_headers(header, dwarf_array);
@@ -155,29 +168,31 @@ static uint64_t parse_multiboot(elf_section_header_t *dwarf_array) {
     }
   }
 
-  return dwarves;
+  return (parse_mb_t){dwarves, mem_entries};
 }
 
 ////////////////////////////
 /// Coalesce Memory Regions
 ////////////////////////////
 
-phys_mem_region_t coalesced[32];
+void fiftytwo_card_pickup() {
+  elf_section_header_t dwarf_array[100];
 
-static int generate_memory_map(uint64_t dwarves,
-                               elf_section_header_t *dwarf_array) {
-  phys_mem_region_t available[32];
-  phys_mem_region_t used[32];
+  // parse the mb header and collect entries
+  parse_mb_t ret = parse_multiboot(dwarf_array);
+
+  // generate clean list of non-kernel available memory
+  phys_mem_region_t available[ARBITRARY_NUM];
+  phys_mem_region_t used[ARBITRARY_NUM];
 
   int num_available = 0;
   int num_used = 0;
-  int num_coalesced = 0;
 
   // generate include list
   uint64_t bytes_available = 0;
-  for (int i = 0; i < e; i++) {
-    mem_map_entry_t m = entries[i];
-    if (m.type == 1) {
+  for (uint64_t i = 0; i < ret.mem_entries; i++) {
+    mem_map_entry_t m = phys_mem_entries[i];
+    if (m.type == AVAILABLE_RAM_TYPE) {
       // m.base_addr;
       bytes_available += m.length;
       available[num_available++] = (phys_mem_region_t){m.base_addr, m.length};
@@ -197,7 +212,7 @@ static int generate_memory_map(uint64_t dwarves,
 
   // Generate exclude list
   uint32_t bytes_used = 0;
-  for (int i = 0; i < dwarves; i++) {
+  for (int i = 0; i < ret.dwarves; i++) {
     elf_section_header_t d = dwarf_array[i];
     if (d.virt_addr && (d.flags & 0x2)) {
       uint64_t phys_add = d.virt_addr - offset;
@@ -217,21 +232,10 @@ static int generate_memory_map(uint64_t dwarves,
   printk(" %d mebibytes used\n", div_round_up(bytes_used, (1024 * 1024)));
 
   // coalesce free mem regions
+  phys_mem_region_t coalesced[ARBITRARY_NUM];
+  int num_coalesced = 0;
   validate_and_coalesce(available, num_available, used, num_used, coalesced,
                         &num_coalesced);
-  return num_coalesced;
-};
-
-uint64_t dwarves;
-elf_section_header_t dwarf_array[100];
-
-void fiftytwo_card_pickup() {
-
-  // parse the mb header and collect entries
-  dwarves = parse_multiboot(dwarf_array);
-
-  // generate clean list of non-kernel available memory
-  int num_coalesced = generate_memory_map(dwarves, dwarf_array);
 
   // turn each coalesced region into pages and add to free list (stored in
   // memory , on pages)
@@ -243,7 +247,5 @@ void fiftytwo_card_pickup() {
   printk("initially generated %d free pages (%d mebibytes)\n", pages_allocated,
          div_round_up(pages_allocated * PAGE_SIZE, (1024 * 1024)));
 
-  // testPageAllocator_stresstest();
-  // testPageAllocator_stresstest();
-  // testPageAllocator_stresstest();
+  testPageAllocator();
 }

@@ -129,7 +129,6 @@ void testPageAllocator_stresstest() {
   // page
 
   int pagenum = 0;
-  int failed = 0;
 
   while ((allpages[pagenum] = (uint64_t)MMU_pf_alloc()) != NULL) {
     // write to the full page
@@ -142,7 +141,6 @@ void testPageAllocator_stresstest() {
   };
 
   printk("successfully allocated and wrote magic to %d pages\n", pagenum);
-  printk("failed %d accesses\n", failed);
 
   // verify each number in each page
   for (int i = 0; i < pagenum; i++) {
@@ -190,6 +188,8 @@ void testPageAllocator() {
 #else
   printk("stresstest is enabled\n");
   printk("allocating all pages, please wait...\n");
+  testPageAllocator_stresstest();
+  testPageAllocator_stresstest();
   testPageAllocator_stresstest();
 #endif
 }
