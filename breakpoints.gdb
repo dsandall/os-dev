@@ -26,6 +26,7 @@ layout src
 break testPageAllocator_stresstest
 #break validate_and_coalesce
 
+break pageFault_handler
 break yeetr
 disp/x skibiditol
 disp/x skibidi

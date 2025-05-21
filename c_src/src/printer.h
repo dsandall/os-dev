@@ -19,7 +19,7 @@ __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...);
 #define debugk(...) // Do nothing
 #endif              // ENABLE_DEBUG
 
-#define ENABLE_TRACE 0
+#define ENABLE_TRACE 1
 #if ENABLE_TRACE
 #define tracek(fmt, ...) printk("TRC - " fmt, ##__VA_ARGS__)
 

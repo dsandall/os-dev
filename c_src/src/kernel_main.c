@@ -5,6 +5,7 @@
 #include "printer.h"
 #include "rejigger_paging.h"
 #include "vga_textbox.h"
+#include "virtpage_alloc.h"
 #include <stdint.h>
 
 extern run_result_t ps2_rx_task(void *s);
@@ -38,17 +39,14 @@ void kernel_main() {
 
   // generate free memory list
   fiftytwo_card_pickup();
-
   regenerate_page_tables();
-
-  uint32_t junk = 0;
-  virt_addr_t v;
-  v.raw = (uint64_t)&junk;
-  phys_addr p = from_virtual(v);
-  printk("regenerated page tablets\n");
-  if (p != v.raw) {
-    ERR_LOOP();
+  void *allocd = MMU_alloc_page();
+  uint64_t *somedata = (uint64_t *)allocd;
+  *somedata = 69;
+  if (*somedata != (uint64_t)69) {
+    debugk("allocated memory not working\n");
   }
+
   // now ps2 is set up and you should be rxing keeb interrupts
   spawn_task(ps2_rx_task, NULL, NULL);
   printk("hardware ps2 enabled\n");

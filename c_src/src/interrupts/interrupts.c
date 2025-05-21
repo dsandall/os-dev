@@ -1,7 +1,9 @@
 #include "interrupts.h"
+#include "book.h"
 #include "freestanding.h"
 #include "pic_8259.h"
 #include "printer.h"
+#include "rejigger_paging.h"
 
 // https://wiki.osdev.org/8259_PIC#Programming_with_the_8259_PIC
 // void interrupt_handler(void) { printk("interrupting cow goes moooo\n"); }
@@ -101,9 +103,22 @@ void pageFault_handler() {
   uint64_t cr3_copy, cr2_copy;
   __asm__ volatile("mov %%cr3, %0" : "=r"(cr3_copy));
   __asm__ volatile("mov %%cr2, %0" : "=r"(cr2_copy));
-  printk("Page fault:\n\tfaulty addr:%lx\n\tpage table in use:%lx\n", cr2_copy,
-         cr3_copy);
-  ERR_LOOP();
+
+  // check for demand pages
+  pte_and_level_t res = walk_page_tables((virt_addr_t)cr2_copy);
+
+  if ((res.lvl == FOUR_KAY) && res.pte->demanded && !res.pte->present) {
+    phys_addr newentry = (phys_addr)MMU_pf_alloc();
+    res.pte->p_addr4k = newentry >> 12;
+    res.pte->present = 1;
+    res.pte->demanded = 0;
+    tracek("pagefault handled gracefully (demand page)\n");
+    return; // WARN: if i can just return from here my mind will be blown
+  } else {
+    printk("Page fault:\n\tfaulty addr:%lx\n\tpage table in use:%lx\n",
+           cr2_copy, cr3_copy);
+    ERR_LOOP();
+  }
 }
 
 void exception_handler(uint32_t vector) {
@@ -151,7 +166,6 @@ void exception_handler(uint32_t vector) {
   case FAULT_PAGE:
     // NOTE: Unique Stack
     pageFault_handler();
-    ERR_LOOP();
     goto exit_err_loop;
   case 0x10:
     printk("x87 FPU floating-point error\n");

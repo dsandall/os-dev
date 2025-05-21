@@ -14,5 +14,6 @@
 -Isrc/serial
 -Isrc/async/ipc_channel
 -Isrc/pageframealloc
+-Isrc/virt_malloc
 -fPIC
 

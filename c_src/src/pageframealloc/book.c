@@ -2,6 +2,7 @@
 #include "freestanding.h"
 #include "multiboot.h"
 #include "printer.h"
+#include "rejigger_paging.h"
 #include <stdint.h>
 
 //////////////////////
@@ -80,10 +81,10 @@ int makePhysPage(phys_mem_region_t available) {
   return pages_allocated;
 }
 
-void *MMU_pf_alloc(void) {
+phys_addr MMU_pf_alloc(void) {
   void *next_free_page = (void *)free_list;
   if (next_free_page == NULL) {
-    return NULL;
+    ERR_LOOP();
   }
 
   free_list = free_list->next;
@@ -91,12 +92,12 @@ void *MMU_pf_alloc(void) {
     ERR_LOOP();
   }
 
-  return next_free_page;
+  return (phys_addr)next_free_page;
 };
 
-bool MMU_pf_free(void *pf) {
+bool MMU_pf_free(phys_addr pf) {
 
-  if (pf < (void *)MULTIBOOT_VADDR_OFFSET) {
+  if (pf < (phys_addr)MULTIBOOT_VADDR_OFFSET) {
     ERR_LOOP();
     // should be a virt addr
   }
@@ -172,7 +173,7 @@ void testPageAllocator() {
   // ensure that physical pages are reused when freed
   printk("allocating and freeing (with printed addresses)...\n");
   for (int i = 0; i < 3; i++) {
-    void *p1, *p2;
+    phys_addr p1, p2;
     p1 = MMU_pf_alloc();
     p2 = MMU_pf_alloc();
     printk("alloc'd %lu\n", (uint64_t)p1);

@@ -2,6 +2,7 @@
 #define BOOK_H
 
 #include "freestanding.h"
+#include "rejigger_paging.h"
 #define PAGE_SIZE 4096
 
 typedef struct {
@@ -14,8 +15,8 @@ void testPageAllocator_stresstest();
 
 int makePhysPage(phys_mem_region_t available);
 
-void *MMU_pf_alloc(void);
-bool MMU_pf_free(void *pf);
+phys_addr MMU_pf_alloc(void);
+bool MMU_pf_free(phys_addr pf);
 
 void alloc();
 void free();
