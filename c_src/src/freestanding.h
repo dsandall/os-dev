@@ -83,4 +83,5 @@ static inline bool PAUSE_INT(void) {
   ASM_CLI();
   return ret;
 }
+
 #endif // FREESTANDING_H

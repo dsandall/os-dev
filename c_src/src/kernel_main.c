@@ -37,6 +37,8 @@ void kernel_main() {
   // hw interrupts, so we can interact with I/O and handle exceptions
   spawn_task(NULL, NULL, hw_int_task_init);
 
+  __asm__("int $0x20");
+
   // generate free memory list
   fiftytwo_card_pickup();
   regenerate_page_tables();
