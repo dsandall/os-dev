@@ -32,7 +32,7 @@ void kernel_main() {
 
   // vga, so we can printf
   spawn_task(vga_task, NULL, vga_task_init);
-  printk("printing some stuff on vga\n");
+  tracek("printing some stuff on vga\n");
 
   // hw interrupts, so we can interact with I/O and handle exceptions
   spawn_task(NULL, NULL, hw_int_task_init);
@@ -40,24 +40,25 @@ void kernel_main() {
   // generate free memory list
   fiftytwo_card_pickup();
   regenerate_page_tables();
-  void *allocd = MMU_alloc_page();
-  uint64_t *somedata = (uint64_t *)allocd;
-  *somedata = 69;
-  if (*somedata != (uint64_t)69) {
+
+  // test demand paging and vpage allocator
+  uint64_t *somedata = (uint64_t *)MMU_alloc_page().raw;
+  *somedata = 0xBEEF;
+  if (*somedata != (uint64_t)0xBEEF) {
     debugk("allocated memory not working\n");
   }
 
   // now ps2 is set up and you should be rxing keeb interrupts
   spawn_task(ps2_rx_task, NULL, NULL);
-  printk("hardware ps2 enabled\n");
+  tracek("hardware ps2 enabled\n");
 
   // initialize hardware serial
   spawn_task(hw_serial_task, NULL, hw_serial_init);
-  printk("single print\n");
+  tracek("single print\n");
 
   // setup double printing
   setPrinter(doubleprint);
-  printk("doubleprint meeee\n");
+  tracek("doubleprint meeee\n");
 
   // Prepare to enter the matrix (by that I mean the async polling system)
   RESUME(true);

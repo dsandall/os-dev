@@ -72,7 +72,7 @@ static virt_addr_t findFreeHeapAddress() {
   return start;
 };
 
-void *MMU_alloc_page() {
+virt_addr_t MMU_alloc_page() {
   // allocates a page, returns virt pointer to that page
   // - find free virt addr (page aligned) (can check page tables to do this)
   // - create new entry in page table (mark as "demanded", but don't alloc ppage
@@ -82,10 +82,10 @@ void *MMU_alloc_page() {
   //
 
   // find free virt addr
-  return (void *)findFreeHeapAddress().raw;
+  return findFreeHeapAddress();
 };
 
-void MMU_free_page(void *) {
+void MMU_free_page(virt_addr_t v) {
   // frees page
   // - access page tables to map vaddr to p page
   // - free the associated physical page
@@ -97,6 +97,8 @@ void MMU_free_page(void *) {
 ///////////////////
 /// pluralized funcs
 ///////////////////
+
+/*
 void *MMU_alloc_pages(int num) {
   void *vaddr_array[num];
   for (int i = 0; i < num; i++) {
@@ -115,3 +117,4 @@ void MMU_free_pages(void *vaddr, int num) {
     MMU_free_page(vaddr++); // WARN: assumes that vaddr is a list of pointers
   }
 };
+*/

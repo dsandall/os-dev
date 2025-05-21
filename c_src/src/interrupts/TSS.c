@@ -38,6 +38,7 @@ struct __attribute__((aligned(16))) __attribute__((packed)) TSSDescriptor {
 };
 
 // Define the stack arrays (aligned to 4 KiB for TSS)
+#define STACK_SIZE (16384) // 16 KiB stack size
 __attribute__((aligned(4096))) uint8_t stack_int3[STACK_SIZE];
 __attribute__((aligned(4096))) uint8_t stack_int2[STACK_SIZE];
 __attribute__((aligned(4096))) uint8_t stack_int1[STACK_SIZE];
@@ -55,19 +56,46 @@ struct TSS_t tss = {
     .reserved3 = 0,
     .iomap_base = sizeof(tss)};
 
+typedef union {
+  uint64_t raw;
+  struct {
+    uint64_t : 40;
+    uint64_t accessed : 1; // bit 40
+    uint64_t rw : 1;
+    uint64_t direction_or_conforming : 1;
+    uint64_t executable : 1;
+    uint64_t non_system : 1;
+    uint64_t dpl : 2;
+    uint64_t present : 1; // bit 47
+    uint64_t : 5;
+    uint64_t long_mode : 1;
+    uint64_t : 10;
+  };
+  struct {
+    uint64_t limit_1 : 16;
+    uint64_t base_1 : 24;
+    uint64_t : 8;
+    uint64_t limit_2 : 4;
+    uint64_t : 4;
+    uint64_t base_2 : 8;
+  };
+} gdt_entry_t;
+
 // the new gdt
-__attribute__((aligned(16))) uint64_t gdt[4];
+__attribute__((aligned(16))) gdt_entry_t gdt[4];
 
 static void gdt_install_tss(struct TSSDescriptor *tss_desc);
 static const int tss_index = 2;
 
 void recreate_gdt() {
 
-  (gdt)[0] = 0; // Null descriptor
-  (gdt)[1] = (1ULL << 43) | (1ULL << 44) | (1ULL << 47) |
-             (1ULL << 53); // .code segment
-  (gdt)[2] = 0;            // ts segment
-  (gdt)[3] = 0;            // ts segment
+  (gdt)[0] = (gdt_entry_t)0UL; // Null descriptor
+  (gdt)[1] = (gdt_entry_t){.executable = 1,
+                           .non_system = 1,
+                           .present = 1,
+                           .long_mode = 1}; // .code segment
+  (gdt)[2] = (gdt_entry_t)0UL;              // ts segment
+  (gdt)[3] = (gdt_entry_t)0UL;              // ts segment
 
   struct TSSDescriptor *tss_in_gdt = (struct TSSDescriptor *)&gdt[tss_index];
   gdt_install_tss(tss_in_gdt);
@@ -88,9 +116,9 @@ void recreate_gdt() {
   uint16_t tss_selector = 8 * tss_index;
   __asm__ volatile("ltr %0" : : "r"(tss_selector));
 
+  // verify
   uint16_t tr;
   __asm__ volatile("str %0" : "=r"(tr));
-
   if (tr != tss_selector) {
     ERR_LOOP();
   }

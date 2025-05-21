@@ -4,6 +4,7 @@
 #include "pic_8259.h"
 #include "printer.h"
 #include "rejigger_paging.h"
+#include <stdint.h>
 
 // https://wiki.osdev.org/8259_PIC#Programming_with_the_8259_PIC
 // void interrupt_handler(void) { printk("interrupting cow goes moooo\n"); }
@@ -14,8 +15,9 @@
 
 ISR_void exception_handler(uint32_t vector);
 
-ISR_void asm_int_handler(uint16_t *ptr) {
-  uint16_t vector = *ptr;
+ISR_void asm_int_handler(uint16_t ptr, uint32_t error) {
+  printk("error is %d\n", error);
+  uint16_t vector = ptr;
   if (vector < 0x20) {
     // exceptions
     exception_handler(vector);

@@ -11,6 +11,11 @@ bits 64
 %macro ISR_WRAPPER 1
 global isr_wrapper_%1
 isr_wrapper_%1:
+
+    %if %1 != 8 && %1 != 10 && %1 != 11 && %1 != 12 && %1 != 13 && %1 != 14 && %1 != 17
+        push 0   ; Dummy error code for exceptions that don't push one
+    %endif
+
     ; Save all general-purpose registers
     push rax
     push rcx
@@ -30,11 +35,9 @@ isr_wrapper_%1:
     push r15
     cld
 
-    mov rax, %1
-    push rax
-    lea rdi, [rsp]
+    mov rdi, %1 ; place interrupt vector in rdi (first function arg reg, sysv calling conventions)
+    mov rsi, [rsp + 15*8]    ; 2nd arg: error code (at top of stack before saving context)
     call asm_int_handler
-    add rsp, 8 ; move sp 64bits 
 
     ; Restore general-purpose registers
     pop r15
@@ -53,6 +56,8 @@ isr_wrapper_%1:
     pop rdx
     pop rcx
     pop rax
+
+    add rsp, 8     ; Remove error code, restoring stack pointer
 
     iretq
 %endmacro
