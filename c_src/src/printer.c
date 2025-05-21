@@ -1,27 +1,14 @@
 #include "printer.h"
 #include "freestanding.h"
 
-static printfunction pc_fn = NULL;
-
-static inline void printc_fn(char c) {
-  if (pc_fn == NULL) {
-    ERR_LOOP();
-  } else {
-    pc_fn(c);
-  }
-};
-
-// sets the print fn used by any future print calls
-void setPrinter(printfunction fn) { pc_fn = fn; };
-
-static inline void print_str(const char *str) {
+static inline void print_str(void (*printc_fn)(char), const char *str) {
   while (*str != '\0') {
     // WARN: write char by char (hopefully it terminates, lol)
     printc_fn((char)(*str++));
   }
 };
 
-static inline void print_hex(uint64_t num) {
+static inline void print_hex(void (*printc_fn)(char), uint64_t num) {
   const char hex_digits[] = "0123456789ABCDEF";
   int started = 0;
 
@@ -39,28 +26,25 @@ static inline void print_hex(uint64_t num) {
   }
 }
 
-static inline void print_unsigned(uint64_t num) {
+static inline void print_unsigned(void (*printc_fn)(char), uint64_t num) {
   if (num >= 10) {
-    print_unsigned(num / 10);
+    print_unsigned(printc_fn, num / 10);
   }
   printc_fn('0' + (num % 10));
 }
 
-static inline void print_signed(uint64_t num_abs, bool is_neg) {
+static inline void print_signed(void (*printc_fn)(char), uint64_t num_abs,
+                                bool is_neg) {
   if (is_neg) {
     printc_fn('-');
-    print_unsigned(num_abs);
+    print_unsigned(printc_fn, num_abs);
   } else {
-    print_unsigned(num_abs);
+    print_unsigned(printc_fn, num_abs);
   }
 }
 
-// all "printk" ends up here
-__attribute__((format(printf, 1, 2))) inline int printk(const char *fmt, ...) {
-
-  // %% %d %u %x %c %p %h[dux] %l[dux] %q[dux] %s
-  va_list va;
-  va_start(va, fmt);
+__attribute__((format(printf, 2, 0))) int
+vprintk_agnostic(void (*printc_fn)(char), const char *fmt, va_list va) {
 
   char c;
   uint64_t n;
@@ -72,80 +56,56 @@ __attribute__((format(printf, 1, 2))) inline int printk(const char *fmt, ...) {
       printc_fn(c);
       break;
     case '\0':
-      va_end(va);
       return 1;
     case '%':
-      // prepare to get next arg
       switch (c = *fmt++) {
-
-      // we assume two % is a breakout for %
       case '%':
         printc_fn('%');
         break;
-
-      // pointer printed as hex
       case 'p':
-        print_hex(va_arg(va, size_t));
+        print_hex(printc_fn, va_arg(va, size_t));
         break;
-
-      // string
       case 's':
-        print_str(va_arg(va, char *));
+        print_str(printc_fn, va_arg(va, char *));
         break;
-
-      // Char
       case 'c':
         printc_fn((char)va_arg(va, int));
-        // char is promoted to int when used as variadic arg, must be cast back
         break;
-
-        ///
-        ///// Ints
-        ///
-
-        // Longs
       case 'l':
       case 'q':
         n = va_arg(va, uint64_t);
-        is_neg = (((int64_t)n) < 0) ? true : false;
+        is_neg = (((int64_t)n) < 0);
         c = *fmt++;
         goto prant;
-
-      // Shorts
       case 'h':
         n = va_arg(va, uint32_t);
-        // short is promoted to int when used as variadic arg
-        is_neg = (((int16_t)n) < 0) ? true : false;
+        is_neg = (((int16_t)n) < 0);
         c = *fmt++;
         goto prant;
-
-      // "Ints"
       case 'd':
         n = va_arg(va, uint32_t);
-        is_neg = (((int32_t)n) < 0) ? true : false;
+        is_neg = (((int32_t)n) < 0);
         goto prant;
       case 'x':
       case 'u':
         n = va_arg(va, uint32_t);
-        is_neg = (((int32_t)n) < 0) ? true : false;
+        is_neg = (((int32_t)n) < 0);
         goto prant;
 
       prant:
         switch (c) {
         case 'd':
-          print_signed(n, is_neg);
+          print_signed(printc_fn, n, is_neg);
           break;
-          // case 'u':
-          // case 'l':
-          print_unsigned(n);
+        case 'u':
+          print_unsigned(printc_fn, n);
           break;
         case 'x':
         default:
-          print_hex(n);
+          print_hex(printc_fn, n);
           break;
         }
         break;
-
       default:
         ERR_LOOP();
         break;
@@ -154,6 +114,34 @@ __attribute__((format(printf, 1, 2))) inline int printk(const char *fmt, ...) {
     }
   }
 
-  va_end(va);
   return 0;
+}
+
+// sets the print fn used by any future print calls
+
+static printfunction pc_fn_glbl = NULL;
+void setPrinter(printfunction fn) { pc_fn_glbl = fn; };
+static inline void printc_fn_safe(char c) {
+  if (pc_fn_glbl == NULL) {
+    ERR_LOOP();
+  } else {
+    pc_fn_glbl(c);
+  }
+};
+
+__attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...) {
+  va_list va;
+  va_start(va, fmt);
+  int ret = vprintk_agnostic(printc_fn_safe, fmt, va);
+  va_end(va);
+  return ret;
+}
+
+extern void printchar_vgatask(char c);
+__attribute__((format(printf, 1, 2))) int tracek_helper(const char *fmt, ...) {
+  va_list va;
+  va_start(va, fmt);
+  int ret = vprintk_agnostic(printchar_vgatask, fmt, va);
+  va_end(va);
+  return ret;
 }

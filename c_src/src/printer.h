@@ -9,6 +9,7 @@ void setPrinter(printfunction);
 // can be sourced from vga or serial driver
 
 __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...);
+__attribute__((format(printf, 1, 2))) int tracek_helper(const char *fmt, ...);
 
 // Define this macro to enable or disable debug printing
 #define ENABLE_DEBUG 1
@@ -21,7 +22,7 @@ __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...);
 
 #define ENABLE_TRACE 1
 #if ENABLE_TRACE
-#define tracek(fmt, ...) printk("TRC - " fmt, ##__VA_ARGS__)
+#define tracek(fmt, ...) tracek_helper("TRC - " fmt, ##__VA_ARGS__)
 
 #else
 #define tracek(...) // Do nothing
