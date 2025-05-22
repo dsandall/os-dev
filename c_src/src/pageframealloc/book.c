@@ -68,9 +68,7 @@ int makePhysPage(phys_mem_region_t available) {
 
     page->next = free_list; // push existing onto the new head
 
-    if (page->next == NULL && free_list != NULL) {
-      ERR_LOOP();
-    }
+    ASSERT(!(page->next == NULL && free_list != NULL));
 
     free_list = page; // set the new head
 
@@ -83,24 +81,17 @@ int makePhysPage(phys_mem_region_t available) {
 
 phys_addr MMU_pf_alloc(void) {
   void *next_free_page = (void *)free_list;
-  if (next_free_page == NULL) {
-    ERR_LOOP();
-  }
+
+  ASSERT(next_free_page != NULL);
 
   free_list = free_list->next;
-  if (next_free_page == (void *)0xFFFFFFFFFFFFFFFF) {
-    ERR_LOOP();
-  }
 
   return (phys_addr)next_free_page;
 };
 
 bool MMU_pf_free(phys_addr pf) {
 
-  if (pf < (phys_addr)MULTIBOOT_VADDR_OFFSET) {
-    ERR_LOOP();
-    // should be a virt addr
-  }
+  ASSERT(pf >= (phys_addr)MULTIBOOT_VADDR_OFFSET);
 
   /*
   phys_mem_region_t returned_page = {((uint64_t)pf) - VIRT_MEM_OFFSET,
@@ -132,7 +123,7 @@ void testPageAllocator_stresstest() {
 
   int pagenum = 0;
 
-  while ((allpages[pagenum] = (uint64_t)MMU_pf_alloc()) != NULL) {
+  while ((allpages[pagenum] = (uint64_t)MMU_pf_alloc()) != (uint64_t)NULL) {
     // write to the full page
     void *p = (void *)allpages[pagenum];
     for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
@@ -148,9 +139,7 @@ void testPageAllocator_stresstest() {
   for (int i = 0; i < pagenum; i++) {
     void *p = (void *)allpages[i];
     for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
-      if (*c != (uint64_t)(i + magic)) {
-        ERR_LOOP();
-      }
+      ASSERT(*c == (uint64_t)(i + magic));
     }
   }
 
@@ -159,9 +148,7 @@ void testPageAllocator_stresstest() {
   // free each page
   for (int i = 0; i < pagenum; i++) {
     void *p = (void *)allpages[i];
-    if (MMU_pf_free(p) == false) {
-      ERR_LOOP();
-    };
+    ASSERT(MMU_pf_free((phys_addr)p));
   }
 
   printk("%d pages were freed\n", pagenum);

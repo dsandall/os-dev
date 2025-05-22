@@ -16,9 +16,11 @@
 // is out of range, 0x4000_0000)
 
 #define PT_ENTRIES 512
-uint64_t kernel_p4_table[PT_ENTRIES] __attribute__((aligned(4096)));
-uint64_t kernel_p3_table[PT_ENTRIES] __attribute__((aligned(4096)));   // PDPT
-uint64_t identity_p2_table[PT_ENTRIES] __attribute__((aligned(4096))); // PD
+uint64_t kernel_p4_table[PT_ENTRIES] __attribute__((aligned(PAGE_SIZE)));
+uint64_t kernel_p3_table[PT_ENTRIES]
+    __attribute__((aligned(PAGE_SIZE))); // PDPT
+uint64_t identity_p2_table[PT_ENTRIES]
+    __attribute__((aligned(PAGE_SIZE))); // PD
 
 //////////////////////////////////////////////////////////////////
 
@@ -51,9 +53,7 @@ static bool check_canonical_address(virt_addr_t v) {
 }
 
 bool where_is_vaddr(virt_addr_t v) {
-  if (!check_canonical_address(v)) {
-    ERR_LOOP();
-  }
+  ASSERT(check_canonical_address(v));
 
   if (v.raw < VADDR_BOUND_ID_MAP) {
     printk("address is in the lower identity map\n");
@@ -82,9 +82,7 @@ bool where_is_vaddr(virt_addr_t v) {
 }
 
 pte_and_level_t walk_page_tables(virt_addr_t v) {
-  if (!check_canonical_address(v)) {
-    ERR_LOOP();
-  }
+  ASSERT(check_canonical_address(v));
 
   // WARN: might need to handle this differently in future
   page_table_entry_t *pml4;
@@ -92,13 +90,12 @@ pte_and_level_t walk_page_tables(virt_addr_t v) {
 
   // Walk PML4
   page_table_entry_t *pml4e = &pml4[v.pml4_idx];
-  if (!(pml4e->present))
-    ERR_LOOP();
+  ASSERT(pml4e->present);
 
   // Walk PDPT
   page_table_entry_t *pdpte = &walk_pointer(pml4e)[v.pdpt_idx];
-  if (!(pdpte->present))
-    ERR_LOOP();
+  ASSERT(pdpte->present);
+
   if (pdpte->pse_or_pat) {
     // 1 GiB page (optional, not requested, but good to include)
     debugk("is 1gb page\n");
@@ -107,8 +104,8 @@ pte_and_level_t walk_page_tables(virt_addr_t v) {
 
   // Walk PD
   page_table_entry_t *pde = &walk_pointer(pdpte)[v.pd_idx];
-  if (!(pde->present))
-    ERR_LOOP();
+  ASSERT(pde->present);
+
   if (pde->pse_or_pat) {
     // 2 MiB page
     debugk("is 2mib page\n");
@@ -125,23 +122,32 @@ pte_and_level_t walk_page_tables(virt_addr_t v) {
   return (pte_and_level_t){pte, FOUR_KAY};
 }
 
+phys_addr from_entry(pte_and_level_t res, virt_addr_t v) {
+  switch (res.lvl) {
+  case FOUR_KAY:
+    return (phys_addr)(res.pte->p_addr4k << OFFSET_4K) + v.offset_4k;
+  case TWO_MEG:
+    return (phys_addr)(res.pte->p_addr_2m << OFFSET_2M) + v.offset_2m;
+  case JUAN_GEE:
+    return (phys_addr)(res.pte->p_addr_1g << OFFSET_1G) + v.offset_1g;
+  }
+}
+
 phys_addr from_virtual(virt_addr_t v) {
 
-  if (!check_canonical_address(v)) {
-    ERR_LOOP();
-  }
+  ASSERT(check_canonical_address(v));
 
   pte_and_level_t res = walk_page_tables(v);
 
   switch (res.lvl) {
   case FOUR_KAY:
     if (res.pte->present)
-      return (phys_addr)(res.pte->p_addr4k << OFFSET_4K) + v.offset_4k;
+      return from_entry(res, v);
     ERR_LOOP(); // you best hope its a demand page otherwise
   case TWO_MEG:
-    return (phys_addr)(res.pte->p_addr_2m << OFFSET_2M) + v.offset_2m;
+    return from_entry(res, v);
   case JUAN_GEE:
-    return (phys_addr)(res.pte->p_addr_1g << OFFSET_1G) + v.offset_1g;
+    return from_entry(res, v);
   }
 
   ERR_LOOP();
@@ -155,9 +161,6 @@ void testAddressTranslation() {
   // attempt translation for identity page by walking page table
   phys_addr p = from_virtual(v);
   debugk("regenerated page tablets\n");
-  if (p != v.raw) {
-    ERR_LOOP();
-  } else {
-    debugk("passed identity page translation check\n");
-  }
+  ASSERT(p == v.raw);
+  debugk("passed identity page translation check\n");
 }

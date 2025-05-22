@@ -122,11 +122,9 @@ vprintk_agnostic(void (*printc_fn)(char), const char *fmt, va_list va) {
 static printfunction pc_fn_glbl = NULL;
 void setPrinter(printfunction fn) { pc_fn_glbl = fn; };
 static inline void printc_fn_safe(char c) {
-  if (pc_fn_glbl == NULL) {
-    ERR_LOOP();
-  } else {
-    pc_fn_glbl(c);
-  }
+  ASSERT(pc_fn_glbl != NULL);
+
+  pc_fn_glbl(c);
 };
 
 __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...) {

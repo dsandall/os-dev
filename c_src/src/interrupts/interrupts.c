@@ -13,14 +13,12 @@
 /// The actual handler
 ///////////////////////////////////////
 
-ISR_void exception_handler(uint32_t vector);
+ISR_void exception_handler(uint32_t vector, uint32_t error);
 
-ISR_void asm_int_handler(uint16_t ptr, uint32_t error) {
-  tracek("error is %d\n", error);
-  uint16_t vector = ptr;
+ISR_void asm_int_handler(uint16_t vector, uint32_t error) {
   if (vector < 0x20) {
     // exceptions
-    exception_handler(vector);
+    exception_handler(vector, error);
     return;
   } else if (vector <= 0x2F) {
     // Hardware IRQs (0x20 - 0x2F)
@@ -101,7 +99,7 @@ ISR_void PIC_common_handler(uint32_t vector) {
 // Exception Handling
 ///////////
 
-void pageFault_handler() {
+void pageFault_handler(uint32_t error) {
   uint64_t cr3_copy, cr2_copy;
   __asm__ volatile("mov %%cr3, %0" : "=r"(cr3_copy));
   __asm__ volatile("mov %%cr2, %0" : "=r"(cr2_copy));
@@ -119,11 +117,12 @@ void pageFault_handler() {
   } else {
     tracek("Page fault:\n\tfaulty addr:%lx\n\tpage table in use:%lx\n",
            cr2_copy, cr3_copy);
+    tracek("error is %d\n", error);
     ERR_LOOP();
   }
 }
 
-void exception_handler(uint32_t vector) {
+ISR_void exception_handler(uint32_t vector, uint32_t error) {
   switch (vector) {
   case 0x00:
     tracek("Divide-by-zero error\n");
@@ -167,7 +166,7 @@ void exception_handler(uint32_t vector) {
     goto exit_err_loop;
   case FAULT_PAGE:
     // NOTE: Unique Stack
-    pageFault_handler();
+    pageFault_handler(error);
     goto exit_err_loop;
   case 0x10:
     tracek("x87 FPU floating-point error\n");

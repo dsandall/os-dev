@@ -63,21 +63,20 @@ ISR_void serial_isr_handler() {
 
   // Check if the interrupt was from a Line Status Error
   else if (iir == IIR_LINE_STAT) {
-    // Read LSR to clear error conditions (e.g., overrun, framing error)
+    // Read LSR to clear error conditions
     uint8_t lsr = inb(COM1_BASE + REG_LSR);
-    // Handle specific error conditions as needed
+    // Handle as needed
     if (lsr & 0x02) {
-      // Framing error or parity error: Handle accordingly
+      // Framing error or parity error
     }
     if (lsr & 0x01) {
-      // Buffer overrun: Handle accordingly
+      // Buffer overrun
     }
     ERR_LOOP();
   }
 
   else if (iir == 0x01) {
     // Spurious interrupt
-    // Optionally log or ignore
     ERR_LOOP();
     tracek("spurious interruptus\n");
   }

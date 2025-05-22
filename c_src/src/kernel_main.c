@@ -1,6 +1,7 @@
 #include "async.h"
 #include "freestanding.h"
 #include "interrupts.h"
+#include "kmalloc.h"
 #include "multiboot.h"
 #include "printer.h"
 #include "rejigger_paging.h"
@@ -64,6 +65,16 @@ void kernel_main() {
 
   // Prepare to enter the matrix (by that I mean the async polling system)
   RESUME(true);
+
+  // test kmalloc
+  virt_addr_t allocated_pointer = kmalloc(69);
+  uint64_t *someotherdata = (uint64_t *)(allocated_pointer.raw);
+  *someotherdata = 0xBEEF;
+  if (*someotherdata != (uint64_t)0xBEEF) {
+    debugk("kmalloc not working\n");
+  }
+
+  kfree(allocated_pointer);
 
   while (1) {
     run_tasks();

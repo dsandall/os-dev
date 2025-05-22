@@ -20,7 +20,11 @@ typedef struct position {
 
 #define ERR_LOOP()                                                             \
   while (1) {                                                                  \
-    asm("hlt");                                                                \
+  }
+
+#define ASSERT(condition)                                                      \
+  while (!(condition)) {                                                       \
+    ERR_LOOP();                                                                \
   }
 
 static __inline int div_round_up(int numerator, int denominator) {
@@ -47,41 +51,36 @@ static inline void io_wait(void) { outb(0x80, 0); }
 //////////////
 // Interrupts
 //////////////
-static inline bool are_interrupts_enabled(void) {
-  unsigned long flags;
-  __asm__ volatile("pushf\n\t" // Push EFLAGS onto the stack
-                   "pop %0"
-                   : "=g"(flags)
-                   :
-                   : "memory");
-  return flags & (1 << 9); // IF is bit 9 of EFLAGS
-}
+static inline bool are_interrupts_enabled(void) {}
 
 #include "printer.h"
 
 #define ASM_STI()                                                              \
   do {                                                                         \
-    tracek("enabling interrupts\n");                                           \
     __asm__("sti");                                                            \
   } while (0)
 
 #define ASM_CLI()                                                              \
   do {                                                                         \
-    tracek("disabling interrupts\n");                                          \
     __asm__("cli");                                                            \
   } while (0)
 
 static inline void RESUME(bool ints) {
-  // enable if enabled
+  // enable if previously enabled
   if (ints) {
     ASM_STI();
   }
 }
 static inline bool PAUSE_INT(void) {
-  bool ret = are_interrupts_enabled();
+  unsigned long flags;
+  // stack nonsense required to read the reg
+  __asm__ volatile("pushf\n\tpop %0" : "=g"(flags)::"memory");
+
   // disable interrupts
   ASM_CLI();
-  return ret;
+
+  // return the previous state of the interrupts
+  return flags & (1 << 9);
 }
 
 #endif // FREESTANDING_H

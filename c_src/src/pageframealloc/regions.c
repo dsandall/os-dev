@@ -111,8 +111,7 @@ void validate_and_coalesce(const phys_mem_region_t *available,
       if (prev->base + prev->size == tmp[i].base) {
         prev->size += tmp[i].size;
       } else {
-        if (out_idx >= MAX_REGIONS)
-          ERR_LOOP();
+        ASSERT(out_idx < MAX_REGIONS);
         out[out_idx++] = tmp[i];
       }
     }
@@ -121,7 +120,7 @@ void validate_and_coalesce(const phys_mem_region_t *available,
   // 6. Filter out regions smaller than 4096 bytes
   int final_count = 0;
   for (int i = 0; i < out_idx; i++) {
-    if (out[i].size >= 4096) {
+    if (out[i].size >= PAGE_SIZE) {
       out[final_count++] = out[i];
     }
   }
