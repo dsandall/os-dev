@@ -1,7 +1,6 @@
 ;https://wiki.osdev.org/Interrupt_Service_Routines#Compiler_Specific_Interrupt_Directives
 ; filename: isr_wrapper.s
 
-
 extern asm_int_handler
 
 section .text
@@ -21,7 +20,6 @@ isr_wrapper_%1:
     push rcx
     push rdx
     push rbx
-    ; push rsp      ; Optional, probably don't do this
     push rbp
     push rsi
     push rdi
@@ -33,12 +31,32 @@ isr_wrapper_%1:
     push r13
     push r14
     push r15
+    ; added for coop
+    ;push rsp //TODO:
+    ;push rip //TODO:
+    ;push rflags //TODO:
+    ;push cs
+    ;push ss
+    ;push ds
+    ;push es
+    ;push fs
+    ;push gs
+    
     cld
-
     mov rdi, %1 ; place interrupt vector in rdi (first function arg reg, sysv calling conventions)
     mov rsi, [rsp + 15*8]    ; 2nd arg: error code (at top of stack before saving context)
     call asm_int_handler
 
+    ; added for coop
+    ;push gs
+    ;push fs
+    ;push es
+    ;push ds
+    ;push ss
+    ;push cs
+    ;push rflags //TODO:
+    ;push rip //TODO:
+    ;push rsp //TODO:
     ; Restore general-purpose registers
     pop r15
     pop r14
@@ -51,7 +69,6 @@ isr_wrapper_%1:
     pop rdi
     pop rsi
     pop rbp
-    ; pop rsp      ; skip this
     pop rbx
     pop rdx
     pop rcx

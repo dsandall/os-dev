@@ -32,50 +32,32 @@ void kernel_main() {
   recreate_gdt();
 
   // vga, so we can printf
-  spawn_task(vga_task, NULL, vga_task_init);
+  vga_task_init(NULL);
   tracek("printing some stuff on vga\n");
 
   // hw interrupts, so we can interact with I/O and handle exceptions
-  spawn_task(NULL, NULL, hw_int_task_init);
-
-  __asm__("int $0x20");
+  hw_int_task_init(NULL);
 
   // generate free memory list
   fiftytwo_card_pickup();
   regenerate_page_tables();
-
-  // test demand paging and vpage allocator
-  uint64_t *somedata = (uint64_t *)MMU_alloc_page().raw;
-  *somedata = 0xBEEF;
-  if (*somedata != (uint64_t)0xBEEF) {
-    debugk("allocated memory not working\n");
-  }
-
-  // now ps2 is set up and you should be rxing keeb interrupts
-  spawn_task(ps2_rx_task, NULL, NULL);
-  tracek("hardware ps2 enabled\n");
+  testVirtPageAlloc();
+  testKmalloc();
 
   // initialize hardware serial
-  spawn_task(hw_serial_task, NULL, hw_serial_init);
+  hw_serial_init(NULL);
   tracek("single print\n");
 
   // setup double printing
   setPrinter(doubleprint);
-  tracek("doubleprint meeee\n");
+  tracek("doubleprint\n");
 
   // Prepare to enter the matrix (by that I mean the async polling system)
+  spawn_task(vga_task, NULL, NULL);
+  spawn_task(ps2_rx_task, NULL, NULL);
+  spawn_task(hw_serial_task, NULL, NULL);
+
   RESUME(true);
-
-  // test kmalloc
-  virt_addr_t allocated_pointer = kmalloc(69);
-  uint64_t *someotherdata = (uint64_t *)(allocated_pointer.raw);
-  *someotherdata = 0xBEEF;
-  if (*someotherdata != (uint64_t)0xBEEF) {
-    debugk("kmalloc not working\n");
-  }
-
-  kfree(allocated_pointer);
-
   while (1) {
     run_tasks();
   }

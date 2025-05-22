@@ -9,7 +9,7 @@
 // there is 1 pool for each size chunk
 struct KmallocPool {
   size_t max_size;
-  int avail;
+  uint64_t avail;
   struct FreeList *head;
 };
 
@@ -30,9 +30,10 @@ struct KmallocExtra {
 #define NUM_STATIC_POOLS 7 + 1
 
 struct KmallocPool staticPools[NUM_STATIC_POOLS] = {
-    {.max_size = 0},    {.max_size = 32},  {.max_size = 64},
-    {.max_size = 128},  {.max_size = 256}, {.max_size = 512},
-    {.max_size = 1024}, {.max_size = 2048}};
+    {.max_size = 0, .head = 0},    {.max_size = 32, .head = 0},
+    {.max_size = 64, .head = 0},   {.max_size = 128, .head = 0},
+    {.max_size = 256, .head = 0},  {.max_size = 512, .head = 0},
+    {.max_size = 1024, .head = 0}, {.max_size = 2048, .head = 0}};
 
 static uint8_t find_suitable_pool(size_t need_size) {
   for (int i = 1; i < NUM_STATIC_POOLS; i++) {
@@ -46,7 +47,6 @@ static struct KmallocExtra *pop(struct KmallocPool *pool) {
   virt_addr_t ret = {.raw = (uint64_t)pool->head};
   pool->head = pool->head->next;
   pool->avail--;
-  tracek("retraw is %lu\n", ret.raw);
   return (struct KmallocExtra *)ret.raw;
 };
 
@@ -100,15 +100,15 @@ virt_addr_t kmalloc(size_t size) {
 
   ASSERT(size);
 
-  size_t ns = NEED_SIZE(size);
-  uint8_t pool_index = find_suitable_pool(ns);
+  const size_t ns = NEED_SIZE(size);
+  const uint8_t pool_index = find_suitable_pool(ns);
 
   // return
   struct KmallocPool *p;
   struct KmallocExtra *ret = 0;
   size_t allocated_size;
 
-  tracek("attempting to allocate %lu bytes\n", size);
+  tracek("attempting to allocate %lu bytes\n", ns);
 
   if (pool_index) {
     // fits into existing pools
@@ -120,8 +120,9 @@ virt_addr_t kmalloc(size_t size) {
 
       uint64_t count = PAGE_SIZE;
       while (count > 0) {
-        count -= p->max_size;
         push((struct KmallocExtra *)new_pool_page.raw, p);
+        count -= p->max_size;
+        new_pool_page.raw += p->max_size;
       }
     }
 
@@ -157,3 +158,62 @@ virt_addr_t kmalloc(size_t size) {
   ASSERT(is_in_kheap((virt_addr_t){.raw = (uint64_t)ret}));
   return (virt_addr_t){.raw = (uint64_t)ret + sizeof(struct KmallocExtra)};
 };
+
+void testKmalloc() {
+  // test kmalloc
+  virt_addr_t allocated_pointer = kmalloc(69);
+  uint64_t *someotherdata = (uint64_t *)(allocated_pointer.raw);
+  *someotherdata = 0xBEEF;
+  if (*someotherdata != (uint64_t)0xBEEF) {
+    debugk("kmalloc not working\n");
+    ERR_LOOP();
+  }
+  kfree(allocated_pointer);
+
+  // test many more times
+  const int num_tests = 12;
+  virt_addr_t ptrs[num_tests];
+
+#define ALLOC_SIZE i * 27 + 1
+#define ALLOC_DATA (i * 65) % 18
+  // test kmalloc
+  for (int i = 0; i < num_tests; i++) {
+    ptrs[i] = kmalloc(ALLOC_SIZE);
+  }
+  for (int i = 0; i < num_tests; i++) {
+    uint64_t *dat = (uint64_t *)(ptrs[i].raw);
+    *dat = ALLOC_DATA;
+  }
+  for (int i = 0; i < num_tests; i++) {
+    ASSERT(*(uint64_t *)(ptrs[i].raw) == ALLOC_DATA);
+  }
+  for (int i = 0; i < num_tests; i++) {
+    kfree(ptrs[i]);
+  }
+
+#define ALLOC_SIZE i * 2048 + 1
+#define ALLOC_DATA (i * 65) % 18 + z
+  // test large allocations
+  for (int i = 0; i < num_tests; i++) {
+    ptrs[i] = kmalloc(ALLOC_SIZE);
+  }
+  for (int i = 0; i < num_tests; i++) {
+    uint64_t *dat = (uint64_t *)(ptrs[i].raw);
+
+    for (int z = 0; z < (ALLOC_SIZE / sizeof(uint64_t)); z++) {
+      tracek("i, z: %d %d\n", i, z);
+      if (i == 7 && z == 13310)
+        breakpoint();
+
+      dat[z] = ALLOC_DATA;
+    }
+  }
+  for (int i = 0; i < num_tests; i++) {
+    for (int z = 0; z < (ALLOC_SIZE / sizeof(uint64_t)); z++) {
+      ASSERT(*(uint64_t *)(ptrs[i].raw) == ALLOC_DATA);
+    }
+  }
+  for (int i = 0; i < num_tests; i++) {
+    kfree(ptrs[i]);
+  }
+}

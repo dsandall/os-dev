@@ -30,7 +30,7 @@ virt_addr_t MMU_alloc_page() {
   virt_addr_t free_vp = heap_pointer;
 
   // increment the vaddr tracker
-  heap_pointer.raw += PAGE_SIZE / sizeof(heap_pointer.raw);
+  heap_pointer.raw += PAGE_SIZE;
 
   ASSERT(is_in_kheap(heap_pointer));
 
@@ -96,3 +96,26 @@ void MMU_free_page(virt_addr_t v) {
 
   MMU_pf_free(from_entry(res, v));
 };
+
+void testVirtPageAlloc() {
+  // test demand paging and vpage allocator
+  uint64_t *somedata = (uint64_t *)MMU_alloc_page().raw;
+  *somedata = 0xBEEF;
+  ASSERT(*somedata == (uint64_t)0xBEEF);
+
+  const int num = 1000;
+  virt_addr_t ptrs[num];
+  for (int i = 0; i < num; i++) {
+    ptrs[i] = MMU_alloc_page();
+    tracek("ptrs[%d] = %lx\n", i, ptrs[i].raw);
+    // try writing
+    uint64_t *somedata = (uint64_t *)ptrs[i].raw;
+    *somedata = 0xBEEF;
+    ASSERT(*somedata == (uint64_t)0xBEEF);
+  }
+  for (int i = 0; i < num; i++) {
+    MMU_free_page(ptrs[i]);
+    if (i != 0)
+      tracek("ptrs[%d] = %lx\n", i - 1, ptrs[i - 1].raw);
+  }
+}

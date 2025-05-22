@@ -11,7 +11,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+//  __asm__("int $0x20");
+
 typedef void ISR_void;
+static void breakpoint() {};
 
 typedef struct position {
   int x;
