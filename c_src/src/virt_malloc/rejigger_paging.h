@@ -37,6 +37,7 @@ typedef union {
 
 typedef union {
   uint64_t raw;
+  void *point;
   struct {
     uint64_t present : 1; // Bit 0
     uint64_t rw : 1;      // Read/write
@@ -44,7 +45,7 @@ typedef union {
     uint64_t pse_or_pat : 1; // PAT on PTE, PSE on PDE
     uint64_t : 4;
     phys_addr p_addr4k : 40;
-    uint64_t : 8;
+    uint64_t magic : 8;
     uint64_t demanded : 1; // bit 60
     uint64_t : 3;
   };

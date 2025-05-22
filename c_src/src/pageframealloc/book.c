@@ -163,11 +163,11 @@ void testPageAllocator() {
     phys_addr p1, p2;
     p1 = MMU_pf_alloc();
     p2 = MMU_pf_alloc();
-    printk("alloc'd %lu\n", (uint64_t)p1);
-    printk("alloc'd %lu\n", (uint64_t)p2);
+    printk("alloc'd %p\n", p1);
+    printk("alloc'd %p\n", p2);
 
     MMU_pf_free(p1);
-    printk("free'd %lu\n", (uint64_t)p1);
+    printk("free'd %p\n", p1);
 
     // WARN: we leak a lil memory here
   }
