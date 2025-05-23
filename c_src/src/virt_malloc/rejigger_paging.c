@@ -3,6 +3,7 @@
 #include "freestanding.h"
 #include "multiboot.h"
 #include "printer.h"
+#include "virtpage_alloc.h"
 #include <stdint.h>
 
 // Static page tables (only for kernel initial boot) (only the first entry in p4
@@ -25,22 +26,29 @@ uint64_t identity_p2_table[PT_ENTRIES]
 //////////////////////////////////////////////////////////////////
 
 void regenerate_page_tables() {
-  // uint64_t *kernel_pml4 = create_page_table();
 
   // TODO: when redoing the identity map, unmap stuff that is outside the range
   // of actual physical memory! otherwise, it will not trigger a page fault, but
   // return gibberish
 
-  // update the cpu reg that points to the master page table
-  // (this should not change anything in theory, as the asm boot stub sets cr3
-  // to this p4 table anyway)
+  page_table_entry_t *boot_master;
+  __asm__ volatile("mov %%cr3, %0" : "=r"(boot_master));
 
-  // __asm__ volatile("mov %0, %%cr3" ::"r"((uint64_t)p4_table) : "memory");
+  // PRIOR to calling KMALLOC:
+  // alloc one page table (physical addr)
+  page_table_entry_t *newmaster = (page_table_entry_t *)MMU_pf_alloc();
 
-  // sanity check, make copy and reload it to the reg
-  uint64_t cr3_copy;
-  __asm__ volatile("mov %%cr3, %0" : "=r"(cr3_copy));
-  __asm__ volatile("mov %0, %%cr3" ::"r"((uint64_t)cr3_copy) : "memory");
+  ////// place existing id map in table
+  /// copy l4 entry from master
+  newmaster[0] = boot_master[0];
+  // copy l3 entry from master
+  page_table_entry_t *l3new = &walk_pointer(newmaster)[0];
+  l3new[0] = walk_pointer(boot_master)[0];
+
+  l3new->magic = PTE_MAGIC; // now that we have full control
+
+  // set as new cr3
+  __asm__ volatile("mov %0, %%cr3" ::"r"(newmaster) : "memory");
 
   return;
 }
@@ -81,15 +89,11 @@ bool where_is_vaddr(virt_addr_t v) {
   ERR_LOOP();
 }
 
-pte_and_level_t walk_page_tables(virt_addr_t v) {
+pte_and_level_t walk_page_tables(virt_addr_t v, page_table_entry_t *master_l4) {
   ASSERT(check_canonical_address(v));
 
-  // WARN: might need to handle this differently in future
-  page_table_entry_t *pml4;
-  __asm__ volatile("mov %%cr3, %0" : "=r"(pml4));
-
   // Walk PML4
-  page_table_entry_t *pml4e = &pml4[v.pml4_idx];
+  page_table_entry_t *pml4e = &master_l4[v.pml4_idx];
   ASSERT(pml4e->present);
 
   // Walk PDPT
@@ -118,7 +122,7 @@ pte_and_level_t walk_page_tables(virt_addr_t v) {
   // if (!(pte.present))
   //  ERR_LOOP();
 
-  debugk("is 4kib page\n");
+  // debugk("is 4kib page\n");
   return (pte_and_level_t){pte, FOUR_KAY};
 }
 
@@ -130,6 +134,8 @@ phys_addr from_entry(pte_and_level_t res, virt_addr_t v) {
     return (phys_addr)(res.pte->p_addr_2m << OFFSET_2M) + v.offset_2m;
   case JUAN_GEE:
     return (phys_addr)(res.pte->p_addr_1g << OFFSET_1G) + v.offset_1g;
+  case MASTER:
+    ERR_LOOP();
   }
 }
 
@@ -137,7 +143,9 @@ phys_addr from_virtual(virt_addr_t v) {
 
   ASSERT(check_canonical_address(v));
 
-  pte_and_level_t res = walk_page_tables(v);
+  page_table_entry_t *current_master;
+  __asm__ volatile("mov %%cr3, %0" : "=r"(current_master));
+  pte_and_level_t res = walk_page_tables(v, current_master);
 
   switch (res.lvl) {
   case FOUR_KAY:
@@ -145,12 +153,10 @@ phys_addr from_virtual(virt_addr_t v) {
       return from_entry(res, v);
     ERR_LOOP(); // you best hope its a demand page otherwise
   case TWO_MEG:
-    return from_entry(res, v);
   case JUAN_GEE:
+  case MASTER:
     return from_entry(res, v);
   }
-
-  ERR_LOOP();
 }
 
 void testAddressTranslation() {

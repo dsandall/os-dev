@@ -14,7 +14,13 @@
 //  __asm__("int $0x20");
 
 typedef void ISR_void;
+
 static void breakpoint() {};
+
+#define BREAK_IF(condition)                                                    \
+  if (condition) {                                                             \
+    breakpoint();                                                              \
+  }
 
 typedef struct position {
   int x;

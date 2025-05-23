@@ -14,6 +14,7 @@ typedef uint64_t phys_addr;
 #define OFFSET_1G 30
 #define OFFSET_2M 21
 #define OFFSET_4K 12
+#define PTE_MAGIC 0x96
 
 typedef union {
   uint64_t raw;
@@ -61,7 +62,12 @@ typedef union {
   };
 } page_table_entry_t;
 
-typedef enum { FOUR_KAY, TWO_MEG, JUAN_GEE } pte_level_t;
+typedef enum {
+  FOUR_KAY = 1,
+  TWO_MEG = 2,
+  JUAN_GEE = 3,
+  MASTER = 4
+} pte_level_t;
 
 typedef struct {
   page_table_entry_t *pte;
@@ -72,7 +78,7 @@ typedef struct {
 
 #define walk_pointer(p) ((page_table_entry_t *)(p->p_addr4k << 12))
 
-pte_and_level_t walk_page_tables(virt_addr_t v);
+pte_and_level_t walk_page_tables(virt_addr_t v, page_table_entry_t *master_l4);
 void regenerate_page_tables();
 phys_addr from_virtual(virt_addr_t v);
 phys_addr from_entry(pte_and_level_t res, virt_addr_t v);

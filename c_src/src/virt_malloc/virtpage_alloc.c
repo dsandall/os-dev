@@ -4,9 +4,9 @@
 #include "rejigger_paging.h"
 #include <stdint.h>
 #include <string.h>
-#define PTE_MAGIC 0x96
 static void makePresentHelper(page_table_entry_t *pte) {
   phys_addr newentry = (phys_addr)MMU_pf_alloc();
+  pte->raw = 0;
   pte->magic = PTE_MAGIC;
   pte->present = 1;
   pte->demanded = 0;
@@ -15,11 +15,50 @@ static void makePresentHelper(page_table_entry_t *pte) {
 };
 
 // keeps track of the next free vaddr in the kernel heap
-virt_addr_t heap_pointer = {.raw = VADDR_BOUND_RESERVED_KERNEL};
 
 bool is_in_kheap(virt_addr_t v) {
   return (v.raw < VADDR_BOUND_KHEAP && v.raw >= VADDR_BOUND_RESERVED_KERNEL);
 }
+
+static pte_and_level_t alloc_helper(pte_and_level_t upper_entry,
+                                    virt_addr_t v) {
+  int idx;
+  switch (upper_entry.lvl) {
+  case MASTER:
+    ERR_LOOP();
+    break;
+  case JUAN_GEE:
+    idx = v.pdpt_idx;
+    break;
+  case TWO_MEG:
+    idx = v.pd_idx;
+    break;
+  case FOUR_KAY:
+    idx = v.pt_idx;
+    break;
+  }
+
+  // Walk
+  pte_and_level_t ret = {.pte = &walk_pointer(upper_entry.pte)[idx],
+                         upper_entry.lvl - 1};
+
+  if (!(ret.pte->present)) {
+    // then make it present
+    debugk("allocating new l%d pagetable (l%d entry) from freelist\n", ret.lvl,
+           upper_entry.lvl);
+    makePresentHelper(ret.pte);
+  }
+
+  ASSERT(ret.pte->magic == PTE_MAGIC);
+
+  if (upper_entry.lvl - 1 >= TWO_MEG) {
+    ASSERT(!ret.pte->pse_or_pat); // hugepage
+  }
+
+  return ret;
+}
+
+virt_addr_t heap_pointer = {.raw = VADDR_BOUND_RESERVED_KERNEL};
 
 virt_addr_t MMU_alloc_page() {
   // allocates a page, returns virt pointer to that page
@@ -30,86 +69,44 @@ virt_addr_t MMU_alloc_page() {
   // level page table before returning control to sender
 
   virt_addr_t free_vp = heap_pointer;
-
-  // increment the vaddr tracker
   heap_pointer.raw += PAGE_SIZE;
 
   ASSERT(is_in_kheap(heap_pointer));
+  debugk("demanding %lx \n", free_vp.raw);
 
-  // start at the current top level page table
   // WARN: assumes that the current page table is the kernel page table, or at
   // least has access to the kernel heap vaddrs
+
+  // start at the current top level page table
   page_table_entry_t *pml4;
   __asm__ volatile("mov %%cr3, %0" : "=r"(pml4));
 
-  // Walk PML4
-  debugk("start addr is %lx \n", free_vp.raw);
-  debugk("pml4 index is %d\n", free_vp.pml4_idx);
   page_table_entry_t *pml4e = &pml4[free_vp.pml4_idx];
   if (!(pml4e->present)) {
     // then make it present
-    debugk("allocating new l3 pagetable from freelist\n");
+    debugk("allocating new l3 pagetable (l4 entry) from freelist\n");
     makePresentHelper(pml4e);
   }
   ASSERT(pml4e->magic == PTE_MAGIC);
 
   // Walk PDPT
-  page_table_entry_t *pdpte = &walk_pointer(pml4e)[free_vp.pdpt_idx];
-  if (!(pdpte->present)) {
-    // then make it present
-    debugk("allocating new l2 pagetable from freelist\n");
-    makePresentHelper(pdpte);
-  }
-  ASSERT(pdpte->magic == PTE_MAGIC);
-  // 1 GiB page
-  ASSERT(!pdpte->pse_or_pat);
+  pte_and_level_t pdpte =
+      alloc_helper((pte_and_level_t){.pte = pml4e, JUAN_GEE}, free_vp);
 
   // Walk PD
-  page_table_entry_t *pde = &walk_pointer(pdpte)[free_vp.pd_idx];
-  tracek("pde is %p\n", pde);
-  static page_table_entry_t *prev = NULL;
-  if (prev == NULL) {
-    prev = pde;
-  } else if (prev != pde) {
-    tracek("CHANGING OF GAURDS %p\n was %p\n", pde, prev);
-    breakpoint();
-    prev = pde;
-  }
-  if (!(pde->present)) {
-    // then make it present
-    debugk("allocating new l1 pagetable from freelist\n");
-    makePresentHelper(pde);
-  }
-  ASSERT(pde->magic == PTE_MAGIC);
-  // 2 MiB page
-  ASSERT(!pde->pse_or_pat);
+  pte_and_level_t pde = alloc_helper(pdpte, free_vp);
 
   // walk PT
-  page_table_entry_t *pte = &walk_pointer(pde)[free_vp.pt_idx];
+  page_table_entry_t *pte = &walk_pointer(pde.pte)[free_vp.pt_idx];
   tracek("pte is %p\n", pte);
   tracek("pte.point is %p\n", pte->point);
 
-  static int tries = 0;
   if ((pte->demanded && pte->magic == PTE_MAGIC)) {
     debugk("attempted to allocate page that was already demanded\n");
     ERR_LOOP();
   } else if ((pte->present) && pte->magic == PTE_MAGIC) {
     debugk("attempted to allocate page that already exists\n");
     ERR_LOOP();
-
-    tries++;
-    debugk("took %d tries\n", tries);
-    breakpoint();
-    // WARN:
-    // WARN:
-    // WARN:
-    // WARN:
-    virt_addr_t v = MMU_alloc_page();
-    ASSERT(pde->magic == PTE_MAGIC);
-    // WARN:
-    // WARN:
-    // WARN:
-    // WARN:
   } else {
     // then mark it as ready to be allocated
     debugk("marking PTE as demanded\n");
@@ -118,7 +115,6 @@ virt_addr_t MMU_alloc_page() {
     pte->magic = PTE_MAGIC;
   }
 
-  tries = 0;
   return free_vp;
 };
 
@@ -129,7 +125,9 @@ void MMU_free_page(virt_addr_t v) {
   // - remove vaddr entry from page tables
   // - no need to free the vaddr, consider it dead
 
-  pte_and_level_t res = walk_page_tables(v);
+  page_table_entry_t *current_master;
+  __asm__ volatile("mov %%cr3, %0" : "=r"(current_master));
+  pte_and_level_t res = walk_page_tables(v, current_master);
 
   ASSERT(is_in_kheap(heap_pointer));
   ASSERT(res.lvl = FOUR_KAY);

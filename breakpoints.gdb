@@ -89,5 +89,6 @@ break testPageAllocator_stresstest
 break testKmalloc 
 break src/kmalloc.c:197
 break breakpoint
+#break alloc_helper
 
 c
