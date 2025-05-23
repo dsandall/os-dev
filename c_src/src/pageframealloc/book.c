@@ -82,6 +82,10 @@ int makePhysPage(phys_mem_region_t available) {
 phys_addr MMU_pf_alloc(void) {
   void *next_free_page = (void *)free_list;
 
+  if (next_free_page == NULL) {
+    return (phys_addr)NULL;
+  }
+
   ASSERT(next_free_page != NULL);
 
   free_list = free_list->next;
@@ -108,13 +112,9 @@ bool MMU_pf_free(phys_addr pf) {
   return true;
 };
 
-#define PHYSICAL_ALLOCATOR_STRESSTEST
-#undef PHYSICAL_ALLOCATOR_STRESSTEST
-#ifdef PHYSICAL_ALLOCATOR_STRESSTEST
-uint64_t allpages[70000]; // just a bit over 65035
-
-void testPageAllocator_stresstest() {
-  const int magic = 7;
+bool generic_page_tester(uint64_t *static_array, uint64_t static_len,
+                         uint64_t (*generic_alloc)(),
+                         bool (*generic_free)(uint64_t)) {
   // stress test by allocating all pages, writing something unique to the full
   // page, and verifying the full page
 
@@ -122,12 +122,13 @@ void testPageAllocator_stresstest() {
   // page
 
   int pagenum = 0;
+  const int magic = 7;
 
-  while ((allpages[pagenum] = (uint64_t)MMU_pf_alloc()) != (uint64_t)NULL) {
+  while ((static_array[pagenum] = generic_alloc()) != (uint64_t)NULL) {
     // write to the full page
-    void *p = (void *)allpages[pagenum];
-    for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
-      *c = pagenum + magic;
+    uint64_t p = static_array[pagenum];
+    for (uint64_t *c = (uint64_t *)p; (c) < (uint64_t *)(p + PAGE_SIZE); c++) {
+      *c = HASH(pagenum, magic, pagenum);
     }
     // and do the next
     pagenum++;
@@ -137,9 +138,9 @@ void testPageAllocator_stresstest() {
 
   // verify each number in each page
   for (int i = 0; i < pagenum; i++) {
-    void *p = (void *)allpages[i];
-    for (uint64_t *c = p; ((void *)c) < (p + PAGE_SIZE); c++) {
-      ASSERT(*c == (uint64_t)(i + magic));
+    uint64_t p = static_array[i];
+    for (uint64_t *c = (uint64_t *)p; c < (uint64_t *)(p + PAGE_SIZE); c++) {
+      ASSERT(*c == (uint64_t)HASH(i, magic, i));
     }
   }
 
@@ -147,11 +148,19 @@ void testPageAllocator_stresstest() {
 
   // free each page
   for (int i = 0; i < pagenum; i++) {
-    void *p = (void *)allpages[i];
-    ASSERT(MMU_pf_free((phys_addr)p));
+    uint64_t p = static_array[i];
+    ASSERT(generic_free(p));
   }
 
   printk("%d pages were freed\n", pagenum);
+}
+
+#define PHYSICAL_ALLOCATOR_STRESSTEST
+// #undef PHYSICAL_ALLOCATOR_STRESSTEST
+#ifdef PHYSICAL_ALLOCATOR_STRESSTEST
+phys_addr allpages[70000]; // just a bit over 65035
+void testPageAllocator_stresstest() {
+  generic_page_tester(allpages, 70000, MMU_pf_alloc, MMU_pf_free);
 }
 #endif
 

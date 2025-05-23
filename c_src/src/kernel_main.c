@@ -38,15 +38,17 @@ void kernel_main() {
   // hw interrupts, so we can interact with I/O and handle exceptions
   hw_int_task_init(NULL);
 
+  //// initialize hardware serial
+  // hw_serial_init(NULL);
+  // debugk("single print\n");
+
   // generate free memory list
   fiftytwo_card_pickup();
+  testPageAllocator();
   regenerate_page_tables();
+  breakpoint();
   testVirtPageAlloc();
   testKmalloc();
-
-  // initialize hardware serial
-  hw_serial_init(NULL);
-  tracek("single print\n");
 
   // setup double printing
   setPrinter(doubleprint);

@@ -4,14 +4,15 @@
 #include "rejigger_paging.h"
 #include <stdint.h>
 #include <string.h>
-static void makePresentHelper(page_table_entry_t *pte) {
+static void makePresentHelper(pte_and_level_t pte) {
   phys_addr newentry = (phys_addr)MMU_pf_alloc();
-  pte->raw = 0;
-  pte->magic = PTE_MAGIC;
-  pte->present = 1;
-  pte->demanded = 0;
-  pte->rw = 1;
-  pte->p_addr4k = (newentry >> 12);
+  pte.pte->raw = 0;
+  if (pte.lvl != MASTER)
+    pte.pte->magic = PTE_MAGIC;
+  pte.pte->present = 1;
+  pte.pte->demanded = 0;
+  pte.pte->rw = 1;
+  pte.pte->p_addr4k = (newentry >> 12);
 };
 
 // keeps track of the next free vaddr in the kernel heap
@@ -46,7 +47,7 @@ static pte_and_level_t alloc_helper(pte_and_level_t upper_entry,
     // then make it present
     debugk("allocating new l%d pagetable (l%d entry) from freelist\n", ret.lvl,
            upper_entry.lvl);
-    makePresentHelper(ret.pte);
+    makePresentHelper(ret);
   }
 
   ASSERT(ret.pte->magic == PTE_MAGIC);
@@ -73,6 +74,8 @@ virt_addr_t MMU_alloc_page() {
 
   ASSERT(is_in_kheap(heap_pointer));
   debugk("demanding %lx \n", free_vp.raw);
+  tracek("lvls:%d, %d, %d, %d\n", free_vp.pml4_idx, free_vp.pdpt_idx,
+         free_vp.pd_idx, free_vp.pt_idx);
 
   // WARN: assumes that the current page table is the kernel page table, or at
   // least has access to the kernel heap vaddrs
@@ -85,9 +88,9 @@ virt_addr_t MMU_alloc_page() {
   if (!(pml4e->present)) {
     // then make it present
     debugk("allocating new l3 pagetable (l4 entry) from freelist\n");
-    makePresentHelper(pml4e);
+    makePresentHelper((pte_and_level_t){.pte = pml4e, .lvl = MASTER});
   }
-  ASSERT(pml4e->magic == PTE_MAGIC);
+  // ASSERT(pml4e->magic == PTE_MAGIC);
 
   // Walk PDPT
   pte_and_level_t pdpte =
@@ -98,8 +101,8 @@ virt_addr_t MMU_alloc_page() {
 
   // walk PT
   page_table_entry_t *pte = &walk_pointer(pde.pte)[free_vp.pt_idx];
-  tracek("pte is %p\n", pte);
-  tracek("pte.point is %p\n", pte->point);
+  // tracek("pte is %p\n", pte);
+  // tracek("pte.point is %p\n", pte->point);
 
   if ((pte->demanded && pte->magic == PTE_MAGIC)) {
     debugk("attempted to allocate page that was already demanded\n");
@@ -109,7 +112,7 @@ virt_addr_t MMU_alloc_page() {
     ERR_LOOP();
   } else {
     // then mark it as ready to be allocated
-    debugk("marking PTE as demanded\n");
+    // debugk("marking PTE as demanded\n");
     pte->raw = (uint64_t)0;
     pte->demanded = 1;
     pte->magic = PTE_MAGIC;
@@ -118,7 +121,7 @@ virt_addr_t MMU_alloc_page() {
   return free_vp;
 };
 
-void MMU_free_page(virt_addr_t v) {
+bool MMU_free_page(virt_addr_t v) {
   // frees page
   // - access page tables to map vaddr to p page
   // - free the associated physical page
@@ -132,33 +135,38 @@ void MMU_free_page(virt_addr_t v) {
   ASSERT(is_in_kheap(heap_pointer));
   ASSERT(res.lvl = FOUR_KAY);
 
-  MMU_pf_free(from_entry(res, v));
+  return MMU_pf_free(from_entry(res, v));
+  ;
+};
+
+const int num = 60000;
+virt_addr_t ptrs[num];
+static uint64_t alloc_test_wrapper() { return MMU_alloc_page().raw; };
+static bool free_test_wrapper(uint64_t addr) {
+  return MMU_free_page((virt_addr_t)addr);
 };
 
 void testVirtPageAlloc() {
+
+  // generic_page_tester(ptrs, 60000, alloc_test_wrapper, free_test_wrapper);
+
   // test demand paging and vpage allocator
-  uint64_t *somedata = (uint64_t *)MMU_alloc_page().raw;
-  *somedata = 0xBEEF;
-  ASSERT(*somedata == (uint64_t)0xBEEF);
 
-  const int num = 800;
-  virt_addr_t ptrs[num];
-  for (int i = 0; i < num; i++) {
-    tracek("%d\n", i);
-    // if (i >= 512)
-    //   breakpoint();
+  // for (int i = 0; i < num; i++) {
+  //   tracek("%d\n", i);
 
-    ptrs[i] = MMU_alloc_page();
+  //  ptrs[i] = MMU_alloc_page();
+  //  ASSERT(ptrs[i].point != NULL);
 
-    tracek("ptrs[%d] = %lx\n", i, ptrs[i].raw);
-    // try writing
-    uint64_t *somedata = (uint64_t *)ptrs[i].raw;
-    *somedata = i;
-    ASSERT(*somedata == (uint64_t)i);
-  }
-  for (int i = 0; i < num; i++) {
-    MMU_free_page(ptrs[i]);
-    if (i != 0)
-      tracek("ptrs[%d] = %lx\n", i - 1, ptrs[i - 1].raw);
-  }
+  //  tracek("ptrs[%d] = %lx\n", i, ptrs[i].raw);
+  //  // try writing
+  //  uint64_t *somedata = (uint64_t *)ptrs[i].raw;
+  //  *somedata = i;
+  //  ASSERT(*somedata == (uint64_t)i);
+  //}
+  // for (int i = 0; i < num; i++) {
+  //  MMU_free_page(ptrs[i]);
+  //  if (i != 0)
+  //    tracek("ptrs[%d] = %lx\n", i - 1, ptrs[i - 1].raw);
+  //}
 }

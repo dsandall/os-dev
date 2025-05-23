@@ -247,5 +247,7 @@ void fiftytwo_card_pickup() {
   printk("initially generated %d free pages (%d mebibytes)\n", pages_allocated,
          div_round_up(pages_allocated * PAGE_SIZE, (1024 * 1024)));
 
-  testPageAllocator();
+  // breakpoint();
+
+  // testPageAllocator();
 }
