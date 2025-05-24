@@ -51,6 +51,7 @@ void regenerate_page_tables() {
   __asm__ volatile("mov %0, %%cr3" ::"r"(newmaster) : "memory");
 
   testVirtPageAlloc();
+
   testKmalloc();
 
   return;

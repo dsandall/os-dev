@@ -90,7 +90,6 @@ virt_addr_t MMU_alloc_page() {
   page_table_entry_t *pml4e = &pml4[free_vp.pml4_idx];
   if (!(pml4e->present)) {
     // then make it present
-    breakpoint();
     debugk("allocating new l3 pagetable (l4 entry) from freelist\n");
     makePresentHelper((pte_and_level_t){.pte = pml4e, .lvl = MASTER});
   }

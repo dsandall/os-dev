@@ -10,15 +10,15 @@ bool generic_page_tester(uint64_t *static_array, uint64_t static_len,
                          uint64_t (*generic_alloc)(void),
                          bool (*generic_free)(uint64_t));
 
-static inline void write_fullpage(void *p, uint64_t pagenum, uint64_t magic) {
+static inline void write_fullpage(void *p) {
   for (uint64_t *c = (uint64_t *)p; (c) < (uint64_t *)(p + PAGE_SIZE); c++) {
-    *c = HASH(pagenum, magic, (uint64_t)c);
+    *c = (uint64_t)c;
   }
 };
 
-static inline void check_fullpage(void *p, uint64_t pagenum, uint64_t magic) {
+static inline void check_fullpage(void *p) {
   for (uint64_t *c = (uint64_t *)p; c < (uint64_t *)(p + PAGE_SIZE); c++) {
-    ASSERT(*c == (uint64_t)HASH(pagenum, magic, (uint64_t)c));
+    ASSERT(*c == (uint64_t)c);
   }
 };
 
@@ -29,14 +29,13 @@ bool generic_page_tester(uint64_t *static_array, uint64_t static_len,
   // page, and verifying the full page
 
   uint64_t pagenum = 0;
-  const uint64_t magic = 7;
 
   // allocate as many pages as you can, record all pointers, write magic to full
   // page
   while ((static_array[pagenum] = generic_alloc()) != (uint64_t)NULL) {
     // write to the full page
     uint64_t p = static_array[pagenum];
-    write_fullpage((void *)p, pagenum, magic);
+    write_fullpage((void *)p);
 
     // and do the next, while checking bounds
     if (pagenum++ >= static_len) {
@@ -55,7 +54,7 @@ bool generic_page_tester(uint64_t *static_array, uint64_t static_len,
   // verify each number in each page
   for (uint64_t i = 0; i < pagenum; i++) {
     uint64_t p = static_array[i];
-    check_fullpage((void *)p, i, magic);
+    check_fullpage((void *)p);
     ASSERT(i < static_len);
   }
 
@@ -134,6 +133,10 @@ void testVirtPageAlloc() {
   tracek("allocating all pages, please wait...\n");
   generic_page_tester(ptrs, NUM_TEST_VPAGES, alloc_test_wrapper,
                       free_test_wrapper);
+  generic_page_tester(ptrs, NUM_TEST_VPAGES, alloc_test_wrapper,
+                      free_test_wrapper);
+  generic_page_tester(ptrs, NUM_TEST_VPAGES, alloc_test_wrapper,
+                      free_test_wrapper);
 #endif
 }
 
@@ -182,30 +185,37 @@ void testKmalloc() {
     kfree(ptrs[i]);
   }
 
-#define ALLOC_SIZE_2 i * 2048 + 1
-#define ALLOC_DATA_2 (i * 65) % 18 + z
+#define ALLOC_SIZE_2 (i * 2048 + 1)
+#define ALLOC_DATA_2 ((i * 65) % 18 + z)
+
   // test large allocations
+  tracek("allocating...\n");
   for (int i = 0; i < num_tests; i++) {
-    ptrs[i] = kmalloc(ALLOC_SIZE);
+    ptrs[i] = kmalloc(ALLOC_SIZE_2);
   }
+
+  tracek("writing...\n");
   for (int i = 0; i < num_tests; i++) {
     uint64_t *dat = (uint64_t *)(ptrs[i].raw);
-
-    for (int z = 0; z < (ALLOC_SIZE / sizeof(uint64_t)); z++) {
-      tracek("i, z: %d %d\n", i, z);
-      if (i == 7 && z == 13310)
-        breakpoint();
-
-      dat[z] = ALLOC_DATA;
+    for (int z = 0; z < (ALLOC_SIZE_2 / sizeof(uint64_t)); z++) {
+      dat[z] = ALLOC_DATA_2;
     }
   }
+
+  tracek("verifying...\n");
   for (int i = 0; i < num_tests; i++) {
-    for (int z = 0; z < (ALLOC_SIZE / sizeof(uint64_t)); z++) {
-      ASSERT(*(uint64_t *)(ptrs[i].raw) == ALLOC_DATA);
+    uint64_t *dat = (uint64_t *)(ptrs[i].raw);
+    for (int z = 0; z < (ALLOC_SIZE_2 / sizeof(uint64_t)); z++) {
+      ASSERT(dat[z] == ALLOC_DATA_2);
     }
   }
+
+  tracek("freeing...\n");
   for (int i = 0; i < num_tests; i++) {
     kfree(ptrs[i]);
   }
+
+  tracek("KMALLOC_STRESSTEST passed\n");
+
 #endif
 }
