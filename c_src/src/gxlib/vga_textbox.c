@@ -2,6 +2,7 @@
 #include "freestanding.h"
 #include "printer.h"
 #include "vgalib.h"
+#include <limits.h>
 
 // Global State
 

@@ -78,7 +78,6 @@ bool generic_page_tester(uint64_t *static_array, uint64_t static_len,
 //// PHYSICAL_ALLOCATOR_STRESSTEST
 ////////////////////////////////////////
 
-#define PHYSICAL_ALLOCATOR_STRESSTEST
 #ifdef PHYSICAL_ALLOCATOR_STRESSTEST
 #define TEST_PAGES 70000
 phys_addr allpages[TEST_PAGES]; // just a bit over 65035
@@ -116,7 +115,6 @@ void testPageAllocator() {
 //// VIRT_ALLOCATOR_STRESSTEST
 ////////////////////////////////////////
 
-#define VIRT_ALLOCATOR_STRESSTEST
 #ifdef VIRT_ALLOCATOR_STRESSTEST
 // WARN: this should trigger a special fault in the page table, if you allocate
 // more virt pages than phys memory during a test
@@ -142,7 +140,6 @@ void testVirtPageAlloc() {
 ////////////////////////////////////////
 //// KMALLOC_STRESSTEST
 ////////////////////////////////////////
-// #define KMALLOC_STRESSTEST
 #ifdef KMALLOC_STRESSTEST
 #include "kmalloc.h"
 #endif

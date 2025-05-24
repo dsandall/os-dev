@@ -4,6 +4,7 @@
 #include "pic_8259.h"
 #include "printer.h"
 #include "rejigger_paging.h"
+#include "virtpage_alloc.h"
 #include <stdint.h>
 
 // https://wiki.osdev.org/8259_PIC#Programming_with_the_8259_PIC
@@ -98,35 +99,6 @@ ISR_void PIC_common_handler(uint32_t vector) {
 ///////////
 // Exception Handling
 ///////////
-
-extern phys_addr unsafe_MMU_pf_alloc();
-ISR_void pageFault_handler(uint32_t error) {
-  virt_addr_t cr2_copy;
-  page_table_entry_t *current_master;
-  __asm__ volatile("mov %%cr3, %0" : "=r"(current_master));
-  __asm__ volatile("mov %%cr2, %0" : "=r"(cr2_copy));
-
-  // check for demand pages
-  pte_and_level_t res = walk_page_tables((virt_addr_t)cr2_copy, current_master);
-
-  if ((res.lvl == FOUR_KAY) && res.pte->demanded && !res.pte->present) {
-    phys_addr newentry = (phys_addr)unsafe_MMU_pf_alloc();
-    if (newentry != (phys_addr)NULL) {
-      res.pte->p_addr4k = newentry >> 12;
-      res.pte->present = 1;
-      res.pte->demanded = 0;
-      // tracek("pagefault handled gracefully (demand page)\n");
-      return;
-    } else {
-      tracek("ran out of physical pages in page fault handler...\n");
-    }
-  }
-
-  tracek("Page fault:\n\tfaulty addr:%p\n\tpage table in use:%p\n",
-         cr2_copy.point, current_master);
-  tracek("error is %d\n", error);
-  ERR_LOOP();
-}
 
 ISR_void exception_handler(uint32_t vector, uint32_t error) {
   switch (vector) {

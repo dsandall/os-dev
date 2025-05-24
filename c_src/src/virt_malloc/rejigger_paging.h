@@ -1,20 +1,20 @@
 #ifndef REJIGGER_PAGING_H
 #define REJIGGER_PAGING_H
 #include "freestanding.h"
-#include <stdint.h>
+
 #define VADDR_BOUND_ID_MAP 0x40000000
 #define VADDR_BOUND_RESERVED_USER 0x0000800000000000
 #define VADDR_BOUND_RESERVED_DEADZONE 0xFFFF800000000000
 #define VADDR_BOUND_RESERVED_ID_MAP 0xFFFF800100000000
 #define VADDR_BOUND_RESERVED_KERNEL 0xFFFFFE0000000000
 #define VADDR_BOUND_KHEAP 0xFFFFFF0000000000
-// #define VADDR_BOUND_KSTACKS 0xFFFFFFFFFFFFFFFF
-//
+#define VADDR_BOUND_KSTACKS 0xFFFFFFFFFFFFFFFF
+
 typedef uint64_t phys_addr;
+
 #define OFFSET_1G 30
 #define OFFSET_2M 21
 #define OFFSET_4K 12
-#define PTE_MAGIC 0x96
 
 typedef union {
   uint64_t raw;
@@ -33,8 +33,9 @@ typedef union {
   struct {
     uint64_t offset_1g : OFFSET_1G;
   };
-
 } virt_addr_t;
+
+#define PTE_MAGIC 0x96
 
 typedef union {
   uint64_t raw;
@@ -62,11 +63,9 @@ typedef union {
   };
 } page_table_entry_t;
 
-typedef enum { FOUR_KAY = 1, TWO_MEG = 2, ONE_GIB = 3, MASTER = 4 } pte_level_t;
-
 typedef struct {
   page_table_entry_t *pte;
-  pte_level_t lvl;
+  enum { FOUR_KAY = 1, TWO_MEG = 2, ONE_GIB = 3, MASTER = 4 } lvl;
 } pte_and_level_t;
 
 //////////////////////////////////////////////////////////////////

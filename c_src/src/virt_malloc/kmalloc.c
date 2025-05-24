@@ -65,7 +65,7 @@ void kfree(virt_addr_t addr) {
   // if it was special, free pages based on the associated size
 
   ASSERT(is_in_kheap(addr));
-  ASSERT(addr.raw < heap_pointer.raw); // and it has been handed out
+  ASSERT(has_been_demanded(addr)); // and it has been handed out
 
   struct KmallocExtra *header =
       (struct KmallocExtra *)(addr.raw) - (uint64_t)sizeof(struct KmallocExtra);

@@ -35,7 +35,7 @@ void kernel_main() {
   vga_task_init(NULL);
   tracek("printing some stuff on vga\n");
 
-  // hw interrupts, so we can interact with I/O and handle exceptions
+  // hw interrupts, so we can interact  I/O and handle exceptions
   hw_int_task_init(NULL);
 
   // generate free memory list

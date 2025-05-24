@@ -26,6 +26,11 @@
 
 typedef uint8_t vga_color_t;
 
+typedef struct position {
+  int x;
+  int y;
+} position_t;
+
 typedef struct {
   uint8_t character : 8;    // 8 bits for the character
   vga_color_t fg_color : 4; // 4 bits for foreground color (0-15)

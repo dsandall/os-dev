@@ -1,5 +1,6 @@
 #include "book.h"
 #include "freestanding.h"
+#include "printer.h"
 #include <stdint.h>
 
 static bool region_contains(const phys_mem_region_t *a,

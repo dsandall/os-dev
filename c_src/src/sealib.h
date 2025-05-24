@@ -6,4 +6,4 @@ char *strcpy(char *dest, const char *src);
 int strcmp(const char *s1, const char *s2);
 const char *strchr(const char *s, int c);
 
-int get78();
+int get78(); // rust static linking test
