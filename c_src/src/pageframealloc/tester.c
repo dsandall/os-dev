@@ -4,6 +4,12 @@
 #include "virtpage_alloc.h"
 #include <stdint.h>
 
+#define HASH(a, b, c) ((a % 17) * b) + c
+
+bool generic_page_tester(uint64_t *static_array, uint64_t static_len,
+                         uint64_t (*generic_alloc)(void),
+                         bool (*generic_free)(uint64_t));
+
 static inline void write_fullpage(void *p, uint64_t pagenum, uint64_t magic) {
   for (uint64_t *c = (uint64_t *)p; (c) < (uint64_t *)(p + PAGE_SIZE); c++) {
     *c = HASH(pagenum, magic, (uint64_t)c);
@@ -72,7 +78,7 @@ bool generic_page_tester(uint64_t *static_array, uint64_t static_len,
 //// PHYSICAL_ALLOCATOR_STRESSTEST
 ////////////////////////////////////////
 
-// #define PHYSICAL_ALLOCATOR_STRESSTEST
+#define PHYSICAL_ALLOCATOR_STRESSTEST
 #ifdef PHYSICAL_ALLOCATOR_STRESSTEST
 #define TEST_PAGES 70000
 phys_addr allpages[TEST_PAGES]; // just a bit over 65035
@@ -110,7 +116,7 @@ void testPageAllocator() {
 //// VIRT_ALLOCATOR_STRESSTEST
 ////////////////////////////////////////
 
-// #define VIRT_ALLOCATOR_STRESSTEST
+#define VIRT_ALLOCATOR_STRESSTEST
 #ifdef VIRT_ALLOCATOR_STRESSTEST
 // WARN: this should trigger a special fault in the page table, if you allocate
 // more virt pages than phys memory during a test
