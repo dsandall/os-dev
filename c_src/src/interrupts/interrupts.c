@@ -16,7 +16,15 @@
 
 ISR_void exception_handler(uint32_t vector, uint32_t error);
 
+uint64_t RIP_static_var;
+uint64_t RFLAGS_static_var;
+uint64_t RSP_static_var;
+uint64_t SS_static_var;
+uint64_t CS_static_var;
+
 ISR_void asm_int_handler(uint16_t vector, uint32_t error) {
+  tracek("rip:%lx, rflags:%lx, oldcs:%lx\n", RIP_static_var, RFLAGS_static_var,
+         CS_static_var);
   if (vector < 0x20) {
     // exceptions
     exception_handler(vector, error);

@@ -9,14 +9,14 @@ CREATE_IPC_CHANNEL_INSTANCE(
     serial_ipc, uint16,
     UINT16_CHANNEL_SIZE); // allocating the ipc_channels (done in each task)
 
-run_result_t hw_serial_task(void *initial_state) {
+async_run_result_t hw_serial_task(void *initial_state) {
   serial_try_send(); // WARN : should only be needed if it gets lost... poll
                      // infrequently
   return PENDING;
 }
 
 void printchar_serialtask(char c);
-run_result_t hw_serial_init(void *initial_state) {
+async_run_result_t hw_serial_init(void *initial_state) {
 
   // init hardware, setup isr handler, masks
   SER_init(&serial_ipc);

@@ -1,54 +1,25 @@
-#include "coop.h"
-#include "paging.h"
-#include <stdint.h>
-typedef struct {
-  phys_addr cr3;
-  struct {
-    uint64_t rsp; // stack pointer
-    uint64_t rip; // instruction pointer (put on stack when int called)
-    uint16_t cs;  // code segment (put on stack when int called)
-  };
-} context_t;
+#ifndef COOP_H
+#define COOP_H
 
-typedef struct {
-  uint64_t tid;
-  context_t context;
-} thread_t;
+#include "freestanding.h"
 
-thread_t glbl_thread_current;
-thread_t glbl_thread_next;
+typedef void (*kproc_t)(void *);
 
 // Called in a loop at the end of kmain. This drives the entire
 // multi-tasking system. The next thread gets selected and run. Threads can
 // yield, exit, etc. If no thread is able to run then PROC_run() returns.
-void PROC_run(void) {
-
-};
+void PROC_run(void);
 
 // Adds a new thread to the multi-tasking system. This requires allocating a new
 // stack in the virtual address space and initializing the thread's context such
 // that the entry_point function gets executed the next time this thread is
 // scheduled. This function does not actually schedule the thread.
-void PROC_create_kthread(kproc_t entry_point, void *arg) {
-  // create new thread
-
-  // allocate a new stack (kernel stack)
-
-  // init thread context
-  //    entry_point func should be called when this thread is scheduled
-
-};
+void PROC_create_kthread(kproc_t entry_point, void *arg);
 
 // Selects the next thread to run. It must select the "thread" that called
 // PROC_run if not other threads are available to run. This function does not
 // actually perform a context switch.
-void PROC_reschedule(void) {
-  // scheduler (round robin)
-
-  // defaults to the original kernel thread (the one that called proc run)
-
-  // does not actually switch
-};
+void PROC_reschedule(void);
 
 // Invokes the scheduler and passes control to the next eligible thread. It is
 // possible to return to the thread that called yield if no other eligible
@@ -59,25 +30,13 @@ void PROC_reschedule(void) {
 // example implementation of yield which just triggers trap number 123 is:
 //
 // static inline void yield(void) { asm volatile("INT $123"); }
-void yield(void) {
-  // passes control to next thread (called by any (kernel?) thread)
-  // can return to itself
-  // should be a trap instruction that calls the actual implementation
-  //    this is to have a consistent yield stack (tss mentioned)
-};
+void yield(void);
 
 // Exits and destroys all the state of the thread that calls kexit. Needs to run
 // the scheduler to pick another process. I also suggest you use a trap-based
 // implementation AND the IST mechanism so that the trap handler runs on a
 // different stack. Running on a different stack makes it possible to free the
 // thread's stack without pulling the rug out from under yourself.
-void kexit(void) {
-  // destroys the calling thread
+void kexit(void);
 
-  // ends by calling scheduler
-
-  // should also be trap based
-  // (IST - interrupt stack table)
-  // has own stack, so you don't destroy yourself while still existing
-
-};
+#endif

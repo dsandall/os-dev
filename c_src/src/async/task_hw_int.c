@@ -11,9 +11,9 @@
 // Allocating for the task (should only be spawned once):
 // - 1 channel (from PS2_rx -> this task, the vga buffer)
 
-run_result_t hw_int_task(void *initial_state) { return DEAD; }
+async_run_result_t hw_int_task(void *initial_state) { return DEAD; }
 
-run_result_t hw_int_task_init(void *initial_state) {
+async_run_result_t hw_int_task_init(void *initial_state) {
 
   init_IDT();
   debugk("IDT initialized\n");

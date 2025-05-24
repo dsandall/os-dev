@@ -1,7 +1,15 @@
 #include "freestanding.h"
 #include "interrupts.h"
+#include "printer.h"
 #include <stdint.h>
 
+// In Long Mode, the TSS does not store information on a task's execution state,
+// instead it is used to store the Interrupt Stack Table.
+//
+// ie, TSS is only for hardware-triggered task selection on a per-core basis,
+// like interrupts. Context switches in the context of software multitasking, or
+// cooperative multithreading, is handled manually by the OS programmer, in
+// conjunction with TSS-managed hardware task switching
 struct __attribute__((packed)) __attribute__((aligned(16))) TSS_t {
   uint32_t reserved0;
   uint64_t rsp0; // Kernel stack pointer (ring 0)
@@ -88,6 +96,8 @@ static void gdt_install_tss(struct TSSDescriptor *tss_desc);
 static const int tss_index = 2;
 
 void recreate_gdt() {
+
+  breakpoint(); // for viewing the code selector
 
   (gdt)[0] = (gdt_entry_t)0UL; // Null descriptor
   (gdt)[1] = (gdt_entry_t){.executable = 1,

@@ -9,7 +9,7 @@ CREATE_IPC_CHANNEL_INSTANCE(vga_ipc, uint16, UINT16_CHANNEL_SIZE);
 //
 // It also supports a print handler
 
-run_result_t vga_task(void *initial_state) {
+async_run_result_t vga_task(void *initial_state) {
 
   uint16_t send_to_vga;
   if (channel_recv_uint16(&vga_ipc, &send_to_vga)) {
@@ -25,7 +25,7 @@ static Textbox_t *default_box;
 extern void print_char_tobox_immediate(char c, Textbox_t *box);
 void printchar_vgatask(char c) { print_char_tobox_immediate(c, default_box); }
 
-run_result_t vga_task_init(void *initial_state) {
+async_run_result_t vga_task_init(void *initial_state) {
 
   // how to set up windows and textboxes
 

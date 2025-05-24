@@ -14,7 +14,7 @@ extern ipc_channel_uint16_t vga_ipc;
 // - 1 channel (from IRQ PS2 -> this Task)
 // - 1 byte rx buffer
 
-run_result_t ps2_rx_task(void *initial_state) {
+async_run_result_t ps2_rx_task(void *initial_state) {
 
   uint8_t out_byte;
   if (channel_recv_uint8(&ps2_ipc, &out_byte)) {

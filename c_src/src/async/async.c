@@ -2,7 +2,7 @@
 #include "freestanding.h"
 #include "printer.h"
 
-task_t tasks[MAX_TASKS];
+async_task_t tasks[MAX_TASKS];
 int task_count = 0;
 
 void spawn_task(run_fn_t poll, void *state, run_fn_t init_fn) {
@@ -13,7 +13,8 @@ void spawn_task(run_fn_t poll, void *state, run_fn_t init_fn) {
     // your function and state pointers
 
     if (poll != NULL)
-      tasks[task_count++] = (task_t){.run = poll, .state = state, .dead = 0};
+      tasks[task_count++] =
+          (async_task_t){.run = poll, .state = state, .dead = 0};
 
     if (init_fn != NULL)
       init_fn(state);
@@ -30,7 +31,7 @@ void run_tasks(void) {
     // if its not dead,
     if (!tasks[i].dead) {
       // run the task function with it's given state pointer passed to it
-      run_result_t res = tasks[i].run(tasks[i].state);
+      async_run_result_t res = tasks[i].run(tasks[i].state);
       // mark dead if dead
       if (res == DEAD) {
         tasks[i].dead = 1;
