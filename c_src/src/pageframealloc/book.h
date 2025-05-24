@@ -15,13 +15,11 @@ void testPageAllocator();
 int makePhysPage(phys_mem_region_t available);
 
 phys_addr MMU_pf_alloc(void);
+phys_addr unsafe_MMU_pf_alloc(void);
+
 bool MMU_pf_free(phys_addr pf);
 
 void alloc();
 void free();
 
-#define HASH(a, b, c) ((a % 17) * b) + c
-bool generic_page_tester(uint64_t *static_array, uint64_t static_len,
-                         uint64_t (*generic_alloc)(),
-                         bool (*generic_free)(uint64_t));
 #endif

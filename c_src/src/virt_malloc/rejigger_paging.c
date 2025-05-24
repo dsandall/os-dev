@@ -3,6 +3,7 @@
 #include "freestanding.h"
 #include "multiboot.h"
 #include "printer.h"
+#include "tester.h"
 #include "virtpage_alloc.h"
 #include <stdint.h>
 
@@ -35,20 +36,22 @@ void regenerate_page_tables() {
   __asm__ volatile("mov %%cr3, %0" : "=r"(boot_master));
 
   // PRIOR to calling KMALLOC:
-  // alloc one page table (physical addr)
+  // alloc one page table for the heap
   page_table_entry_t *newmaster = (page_table_entry_t *)MMU_pf_alloc();
 
   ////// place existing id map in table
-  /// copy l4 entry from master
-  newmaster[0] = boot_master[0];
-  // copy l3 entry from master
-  page_table_entry_t *l3new = &walk_pointer(newmaster)[0];
-  l3new[0] = walk_pointer(boot_master)[0];
+  newmaster[0] = boot_master[0]; // copy l4 entry from master
 
-  l3new->magic = PTE_MAGIC; // now that we have full control
+  page_table_entry_t *l3new = &walk_pointer(newmaster)[0];
+  l3new[0] = walk_pointer(boot_master)[0]; // copy l3 entry from master
+
+  l3new->magic = PTE_MAGIC; // only for l3 or lower
 
   // set as new cr3
   __asm__ volatile("mov %0, %%cr3" ::"r"(newmaster) : "memory");
+
+  testVirtPageAlloc();
+  testKmalloc();
 
   return;
 }
@@ -103,7 +106,7 @@ pte_and_level_t walk_page_tables(virt_addr_t v, page_table_entry_t *master_l4) {
   if (pdpte->pse_or_pat) {
     // 1 GiB page (optional, not requested, but good to include)
     debugk("is 1gb page\n");
-    return (pte_and_level_t){pdpte, JUAN_GEE};
+    return (pte_and_level_t){pdpte, ONE_GIB};
   }
 
   // Walk PD
@@ -118,9 +121,6 @@ pte_and_level_t walk_page_tables(virt_addr_t v, page_table_entry_t *master_l4) {
 
   // Walk PT
   page_table_entry_t *pte = &walk_pointer(pde)[v.pt_idx];
-  // WARN: check disabled for demand paging
-  // if (!(pte.present))
-  //  ERR_LOOP();
 
   // debugk("is 4kib page\n");
   return (pte_and_level_t){pte, FOUR_KAY};
@@ -132,7 +132,7 @@ phys_addr from_entry(pte_and_level_t res, virt_addr_t v) {
     return (phys_addr)(res.pte->p_addr4k << OFFSET_4K) + v.offset_4k;
   case TWO_MEG:
     return (phys_addr)(res.pte->p_addr_2m << OFFSET_2M) + v.offset_2m;
-  case JUAN_GEE:
+  case ONE_GIB:
     return (phys_addr)(res.pte->p_addr_1g << OFFSET_1G) + v.offset_1g;
   case MASTER:
     ERR_LOOP();
@@ -153,7 +153,7 @@ phys_addr from_virtual(virt_addr_t v) {
       return from_entry(res, v);
     ERR_LOOP(); // you best hope its a demand page otherwise
   case TWO_MEG:
-  case JUAN_GEE:
+  case ONE_GIB:
   case MASTER:
     return from_entry(res, v);
   }

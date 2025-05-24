@@ -2,8 +2,8 @@
 #include "book.h"
 #include "freestanding.h"
 #include "rejigger_paging.h"
-#include <stdint.h>
-#include <string.h>
+#include "tester.h"
+
 static void makePresentHelper(pte_and_level_t pte) {
   phys_addr newentry = (phys_addr)MMU_pf_alloc();
   pte.pte->raw = 0;
@@ -28,7 +28,7 @@ static pte_and_level_t alloc_helper(pte_and_level_t upper_entry,
   case MASTER:
     ERR_LOOP();
     break;
-  case JUAN_GEE:
+  case ONE_GIB:
     idx = v.pdpt_idx;
     break;
   case TWO_MEG:
@@ -47,6 +47,7 @@ static pte_and_level_t alloc_helper(pte_and_level_t upper_entry,
     // then make it present
     debugk("allocating new l%d pagetable (l%d entry) from freelist\n", ret.lvl,
            upper_entry.lvl);
+    tracek("associated vaddr is %p\n", v.point);
     makePresentHelper(ret);
   }
 
@@ -59,7 +60,7 @@ static pte_and_level_t alloc_helper(pte_and_level_t upper_entry,
   return ret;
 }
 
-virt_addr_t heap_pointer = {.raw = VADDR_BOUND_RESERVED_KERNEL};
+virt_addr_t heap_pointer = {.raw = VADDR_BOUND_RESERVED_KERNEL + PAGE_SIZE};
 
 virt_addr_t MMU_alloc_page() {
   // allocates a page, returns virt pointer to that page
@@ -87,6 +88,7 @@ virt_addr_t MMU_alloc_page() {
   page_table_entry_t *pml4e = &pml4[free_vp.pml4_idx];
   if (!(pml4e->present)) {
     // then make it present
+    breakpoint();
     debugk("allocating new l3 pagetable (l4 entry) from freelist\n");
     makePresentHelper((pte_and_level_t){.pte = pml4e, .lvl = MASTER});
   }
@@ -94,7 +96,7 @@ virt_addr_t MMU_alloc_page() {
 
   // Walk PDPT
   pte_and_level_t pdpte =
-      alloc_helper((pte_and_level_t){.pte = pml4e, JUAN_GEE}, free_vp);
+      alloc_helper((pte_and_level_t){.pte = pml4e, ONE_GIB}, free_vp);
 
   // Walk PD
   pte_and_level_t pde = alloc_helper(pdpte, free_vp);
@@ -136,37 +138,4 @@ bool MMU_free_page(virt_addr_t v) {
   ASSERT(res.lvl = FOUR_KAY);
 
   return MMU_pf_free(from_entry(res, v));
-  ;
 };
-
-const int num = 60000;
-virt_addr_t ptrs[num];
-static uint64_t alloc_test_wrapper() { return MMU_alloc_page().raw; };
-static bool free_test_wrapper(uint64_t addr) {
-  return MMU_free_page((virt_addr_t)addr);
-};
-
-void testVirtPageAlloc() {
-
-  // generic_page_tester(ptrs, 60000, alloc_test_wrapper, free_test_wrapper);
-
-  // test demand paging and vpage allocator
-
-  // for (int i = 0; i < num; i++) {
-  //   tracek("%d\n", i);
-
-  //  ptrs[i] = MMU_alloc_page();
-  //  ASSERT(ptrs[i].point != NULL);
-
-  //  tracek("ptrs[%d] = %lx\n", i, ptrs[i].raw);
-  //  // try writing
-  //  uint64_t *somedata = (uint64_t *)ptrs[i].raw;
-  //  *somedata = i;
-  //  ASSERT(*somedata == (uint64_t)i);
-  //}
-  // for (int i = 0; i < num; i++) {
-  //  MMU_free_page(ptrs[i]);
-  //  if (i != 0)
-  //    tracek("ptrs[%d] = %lx\n", i - 1, ptrs[i - 1].raw);
-  //}
-}

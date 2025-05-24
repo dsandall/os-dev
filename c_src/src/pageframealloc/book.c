@@ -5,6 +5,8 @@
 #include "rejigger_paging.h"
 #include <stdint.h>
 
+#include "tester.h"
+
 //////////////////////
 //////////////////////
 //////////////////////
@@ -79,18 +81,24 @@ int makePhysPage(phys_mem_region_t available) {
   return pages_allocated;
 }
 
-phys_addr MMU_pf_alloc(void) {
+phys_addr unsafe_MMU_pf_alloc(void) {
   void *next_free_page = (void *)free_list;
 
   if (next_free_page == NULL) {
     return (phys_addr)NULL;
   }
 
-  ASSERT(next_free_page != NULL);
-
   free_list = free_list->next;
 
   return (phys_addr)next_free_page;
+}
+
+phys_addr MMU_pf_alloc(void) {
+  phys_addr p = unsafe_MMU_pf_alloc();
+
+  ASSERT(p != (uint64_t)NULL);
+
+  return p;
 };
 
 bool MMU_pf_free(phys_addr pf) {
@@ -111,83 +119,3 @@ bool MMU_pf_free(phys_addr pf) {
 
   return true;
 };
-
-bool generic_page_tester(uint64_t *static_array, uint64_t static_len,
-                         uint64_t (*generic_alloc)(),
-                         bool (*generic_free)(uint64_t)) {
-  // stress test by allocating all pages, writing something unique to the full
-  // page, and verifying the full page
-
-  // allocate as many pages as you can, record all pointers, write magic to full
-  // page
-
-  int pagenum = 0;
-  const int magic = 7;
-
-  while ((static_array[pagenum] = generic_alloc()) != (uint64_t)NULL) {
-    // write to the full page
-    uint64_t p = static_array[pagenum];
-    for (uint64_t *c = (uint64_t *)p; (c) < (uint64_t *)(p + PAGE_SIZE); c++) {
-      *c = HASH(pagenum, magic, pagenum);
-    }
-    // and do the next
-    pagenum++;
-  };
-
-  printk("successfully allocated and wrote magic to %d pages\n", pagenum);
-
-  // verify each number in each page
-  for (int i = 0; i < pagenum; i++) {
-    uint64_t p = static_array[i];
-    for (uint64_t *c = (uint64_t *)p; c < (uint64_t *)(p + PAGE_SIZE); c++) {
-      ASSERT(*c == (uint64_t)HASH(i, magic, i));
-    }
-  }
-
-  printk("%d pages were verified\n", pagenum);
-
-  // free each page
-  for (int i = 0; i < pagenum; i++) {
-    uint64_t p = static_array[i];
-    ASSERT(generic_free(p));
-  }
-
-  printk("%d pages were freed\n", pagenum);
-}
-
-#define PHYSICAL_ALLOCATOR_STRESSTEST
-// #undef PHYSICAL_ALLOCATOR_STRESSTEST
-#ifdef PHYSICAL_ALLOCATOR_STRESSTEST
-phys_addr allpages[70000]; // just a bit over 65035
-void testPageAllocator_stresstest() {
-  generic_page_tester(allpages, 70000, MMU_pf_alloc, MMU_pf_free);
-}
-#endif
-
-void testPageAllocator() {
-  // allocate and free a few pages , print the addresses
-  // ensure that physical pages are reused when freed
-  printk("allocating and freeing (with printed addresses)...\n");
-  for (int i = 0; i < 3; i++) {
-    phys_addr p1, p2;
-    p1 = MMU_pf_alloc();
-    p2 = MMU_pf_alloc();
-    printk("alloc'd %p\n", p1);
-    printk("alloc'd %p\n", p2);
-
-    MMU_pf_free(p1);
-    printk("free'd %p\n", p1);
-
-    // WARN: we leak a lil memory here
-  }
-
-#ifndef PHYSICAL_ALLOCATOR_STRESSTEST
-  printk("stresstest is not enabled\n");
-#else
-  printk("stresstest is enabled\n");
-  printk("allocating all pages, please wait...\n");
-  testPageAllocator_stresstest();
-  testPageAllocator_stresstest();
-  testPageAllocator_stresstest();
-#endif
-}

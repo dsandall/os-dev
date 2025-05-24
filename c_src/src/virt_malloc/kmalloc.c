@@ -24,6 +24,7 @@ struct KmallocExtra {
   struct KmallocPool *pool;
   size_t size;
 };
+
 #define NEED_SIZE(size) (size + sizeof(struct KmallocExtra))
 #define CIELING_DIV(num, den) ((num / den) + (num % den ? 1 : 0))
 #define CUSTOM_POOL_MAGIC (struct KmallocPool *)0x66667777
@@ -158,62 +159,3 @@ virt_addr_t kmalloc(size_t size) {
   ASSERT(is_in_kheap((virt_addr_t){.raw = (uint64_t)ret}));
   return (virt_addr_t){.raw = (uint64_t)ret + sizeof(struct KmallocExtra)};
 };
-
-void testKmalloc() {
-  // test kmalloc
-  virt_addr_t allocated_pointer = kmalloc(69);
-  uint64_t *someotherdata = (uint64_t *)(allocated_pointer.raw);
-  *someotherdata = 0xBEEF;
-  if (*someotherdata != (uint64_t)0xBEEF) {
-    debugk("kmalloc not working\n");
-    ERR_LOOP();
-  }
-  kfree(allocated_pointer);
-
-  // test many more times
-  const int num_tests = 12;
-  virt_addr_t ptrs[num_tests];
-
-#define ALLOC_SIZE i * 27 + 1
-#define ALLOC_DATA (i * 65) % 18
-  // test kmalloc
-  for (int i = 0; i < num_tests; i++) {
-    ptrs[i] = kmalloc(ALLOC_SIZE);
-  }
-  for (int i = 0; i < num_tests; i++) {
-    uint64_t *dat = (uint64_t *)(ptrs[i].raw);
-    *dat = ALLOC_DATA;
-  }
-  for (int i = 0; i < num_tests; i++) {
-    ASSERT(*(uint64_t *)(ptrs[i].raw) == ALLOC_DATA);
-  }
-  for (int i = 0; i < num_tests; i++) {
-    kfree(ptrs[i]);
-  }
-
-#define ALLOC_SIZE i * 2048 + 1
-#define ALLOC_DATA (i * 65) % 18 + z
-  // test large allocations
-  for (int i = 0; i < num_tests; i++) {
-    ptrs[i] = kmalloc(ALLOC_SIZE);
-  }
-  for (int i = 0; i < num_tests; i++) {
-    uint64_t *dat = (uint64_t *)(ptrs[i].raw);
-
-    for (int z = 0; z < (ALLOC_SIZE / sizeof(uint64_t)); z++) {
-      tracek("i, z: %d %d\n", i, z);
-      if (i == 7 && z == 13310)
-        breakpoint();
-
-      dat[z] = ALLOC_DATA;
-    }
-  }
-  for (int i = 0; i < num_tests; i++) {
-    for (int z = 0; z < (ALLOC_SIZE / sizeof(uint64_t)); z++) {
-      ASSERT(*(uint64_t *)(ptrs[i].raw) == ALLOC_DATA);
-    }
-  }
-  for (int i = 0; i < num_tests; i++) {
-    kfree(ptrs[i]);
-  }
-}

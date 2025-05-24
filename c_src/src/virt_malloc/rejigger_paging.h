@@ -62,12 +62,7 @@ typedef union {
   };
 } page_table_entry_t;
 
-typedef enum {
-  FOUR_KAY = 1,
-  TWO_MEG = 2,
-  JUAN_GEE = 3,
-  MASTER = 4
-} pte_level_t;
+typedef enum { FOUR_KAY = 1, TWO_MEG = 2, ONE_GIB = 3, MASTER = 4 } pte_level_t;
 
 typedef struct {
   page_table_entry_t *pte;

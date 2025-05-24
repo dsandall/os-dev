@@ -239,6 +239,7 @@ void fiftytwo_card_pickup() {
 
   // turn each coalesced region into pages and add to free list (stored in
   // memory , on pages)
+
   int pages_allocated = 0;
   for (int i = 0; i < num_coalesced; i++) {
     pages_allocated += makePhysPage(coalesced[i]);
@@ -247,7 +248,5 @@ void fiftytwo_card_pickup() {
   printk("initially generated %d free pages (%d mebibytes)\n", pages_allocated,
          div_round_up(pages_allocated * PAGE_SIZE, (1024 * 1024)));
 
-  // breakpoint();
-
-  // testPageAllocator();
+  testPageAllocator();
 }
