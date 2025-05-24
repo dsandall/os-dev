@@ -11,6 +11,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+size_t strlen(const char *s);
+void *memcpy(void *dest, const void *src, size_t n);
+
 //  __asm__("int $0x20");
 static void breakpoint() {};
 
@@ -37,11 +40,11 @@ static __inline int div_round_up(int numerator, int denominator) {
 //////////////
 static __inline unsigned char inb(unsigned short int __port) {
   unsigned char _v;
-  __asm__ __volatile__("inb %w1,%0" : "=a"(_v) : "Nd"(__port));
+  asm volatile("inb %w1,%0" : "=a"(_v) : "Nd"(__port));
   return _v;
 }
 static __inline void outb(unsigned short int __port, unsigned char __value) {
-  __asm__ __volatile__("outb %b0,%w1" : : "a"(__value), "Nd"(__port));
+  asm volatile("outb %b0,%w1" : : "a"(__value), "Nd"(__port));
   // io_wait();
 }
 
@@ -56,17 +59,17 @@ typedef void ISR_void;
 static inline void RESUME(bool ints) {
   // enable if previously enabled
   if (ints) {
-    __asm__("sti");
+    asm("sti");
   }
 }
 
 static inline bool PAUSE_INT(void) {
   unsigned long flags;
   // stack nonsense required to read the reg
-  __asm__ volatile("pushf\n\tpop %0" : "=g"(flags)::"memory");
+  asm volatile("pushf\n\tpop %0" : "=g"(flags)::"memory");
 
   // disable interrupts
-  __asm__("cli");
+  asm("cli");
 
   // return the previous state of the interrupts
   return flags & (1 << 9);

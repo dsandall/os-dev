@@ -1,7 +1,6 @@
 #include "serial.h"
 #include "channel.h"
 #include "freestanding.h"
-#include "sealib.h"
 #include <stdint.h>
 
 #define COM1_BASE 0x3F8

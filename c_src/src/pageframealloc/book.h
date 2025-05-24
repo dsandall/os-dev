@@ -2,8 +2,8 @@
 #define BOOK_H
 
 #include "freestanding.h"
+#include "paging.h"
 #include "regions.h"
-#include "rejigger_paging.h"
 
 void testPageAllocator();
 
@@ -13,8 +13,5 @@ phys_addr MMU_pf_alloc(void);
 phys_addr unsafe_MMU_pf_alloc(void);
 
 bool MMU_pf_free(phys_addr pf);
-
-void alloc();
-void free();
 
 #endif
