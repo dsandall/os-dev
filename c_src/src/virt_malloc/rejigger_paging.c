@@ -6,7 +6,6 @@
 #include "tester.h"
 #include "virtpage_alloc.h"
 #include <stdint.h>
-
 // Static page tables (only for kernel initial boot) (only the first entry in p4
 // is used for vaddr mapping)
 //
@@ -58,39 +57,10 @@ void regenerate_page_tables() {
 }
 
 //////////////////////////////////////////////////////////////////
-static bool check_canonical_address(virt_addr_t v) {
+bool check_canonical_address(virt_addr_t v) {
   bool bit47 = (v.raw >> 47) & 1;
   uint16_t expected = bit47 ? 0xFFFF : 0x0000;
   return (expected == v.canonical_sign_ext);
-}
-
-bool where_is_vaddr(virt_addr_t v) {
-  ASSERT(check_canonical_address(v));
-
-  if (v.raw < VADDR_BOUND_ID_MAP) {
-    printk("address is in the lower identity map\n");
-    return true;
-  } else if (v.raw < VADDR_BOUND_RESERVED_USER) {
-    printk("address is somewhere in user space\n");
-    return false;
-  } else if (v.raw < VADDR_BOUND_RESERVED_DEADZONE) {
-    printk("address is in the deadzone (non-canonical)\n");
-    return false;
-  } else if (v.raw < VADDR_BOUND_RESERVED_ID_MAP) {
-    printk("address is in the reserved future ID map\n");
-    return false;
-  } else if (v.raw < VADDR_BOUND_RESERVED_KERNEL) {
-    printk("address is in reserved kernel memory\n");
-    return false;
-  } else if (v.raw < VADDR_BOUND_KHEAP) {
-    printk("address is in kernel heap\n");
-    return true;
-  } else {
-    printk("address is (presumably) in some kernel stack\n");
-    return true;
-  }
-
-  ERR_LOOP();
 }
 
 pte_and_level_t walk_page_tables(virt_addr_t v, page_table_entry_t *master_l4) {

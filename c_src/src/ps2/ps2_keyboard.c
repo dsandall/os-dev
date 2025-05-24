@@ -1,9 +1,9 @@
 #include "ps2_keyboard.h"
 #include "async.h"
-#include "channel.h"
 #include "freestanding.h"
 #include "keyboard_scancodes.h"
 #include "printer.h"
+#include "ps2_8042.h"
 #include <stdint.h>
 
 void init_PS2_keyboard(void);

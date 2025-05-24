@@ -1,12 +1,24 @@
 #include "ps2_8042.h"
 #include "printer.h"
 
-status_register_t get_statusreg() {
+typedef union {
+  uint8_t raw;
+  struct {
+    unsigned en_int_p1 : 1;
+    unsigned en_int_p2 : 1;
+    unsigned sys_flag : 1;
+    unsigned : 1;
+    unsigned disable_clk_p1 : 1;
+    unsigned disable_clk_p2 : 1;
+    unsigned en_p1_translation : 1;
+    unsigned : 1;
+  } __attribute__((packed));
+} controller_configuration_byte_t;
+
+void get_statusreg() {
   status_register_t stat = PS2_STATUS();
   tracek("%d%d%d%d%d%d\n", stat.output_full, stat.input_full, stat.sys_flag,
          stat.to_controller, stat.err_timeout, stat.err_parity);
-
-  return stat;
 };
 
 void init_PS2_8042() {

@@ -2,13 +2,8 @@
 #define BOOK_H
 
 #include "freestanding.h"
+#include "regions.h"
 #include "rejigger_paging.h"
-#define PAGE_SIZE 4096
-
-typedef struct {
-  uint64_t base;
-  uint32_t size;
-} phys_mem_region_t;
 
 void testPageAllocator();
 

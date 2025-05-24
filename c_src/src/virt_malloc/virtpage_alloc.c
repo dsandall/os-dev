@@ -5,6 +5,14 @@
 #include "rejigger_paging.h"
 #include "tester.h"
 
+#define VADDR_BOUND_ID_MAP 0x40000000
+#define VADDR_BOUND_RESERVED_USER 0x0000800000000000
+#define VADDR_BOUND_RESERVED_DEADZONE 0xFFFF800000000000
+#define VADDR_BOUND_RESERVED_ID_MAP 0xFFFF800100000000
+#define VADDR_BOUND_RESERVED_KERNEL 0xFFFFFE0000000000
+#define VADDR_BOUND_KHEAP 0xFFFFFF0000000000
+#define VADDR_BOUND_KSTACKS 0xFFFFFFFFFFFFFFFF
+
 static void makePresentHelper(pte_and_level_t pte) {
   phys_addr newentry = (phys_addr)MMU_pf_alloc();
   pte.pte->raw = 0;
@@ -15,6 +23,35 @@ static void makePresentHelper(pte_and_level_t pte) {
   pte.pte->rw = 1;
   pte.pte->p_addr4k = (newentry >> 12);
 };
+
+bool where_is_vaddr(virt_addr_t v) {
+  ASSERT(check_canonical_address(v));
+
+  if (v.raw < VADDR_BOUND_ID_MAP) {
+    printk("address is in the lower identity map\n");
+    return true;
+  } else if (v.raw < VADDR_BOUND_RESERVED_USER) {
+    printk("address is somewhere in user space\n");
+    return false;
+  } else if (v.raw < VADDR_BOUND_RESERVED_DEADZONE) {
+    printk("address is in the deadzone (non-canonical)\n");
+    return false;
+  } else if (v.raw < VADDR_BOUND_RESERVED_ID_MAP) {
+    printk("address is in the reserved future ID map\n");
+    return false;
+  } else if (v.raw < VADDR_BOUND_RESERVED_KERNEL) {
+    printk("address is in reserved kernel memory\n");
+    return false;
+  } else if (v.raw < VADDR_BOUND_KHEAP) {
+    printk("address is in kernel heap\n");
+    return true;
+  } else {
+    printk("address is (presumably) in some kernel stack\n");
+    return true;
+  }
+
+  ERR_LOOP();
+}
 
 bool is_in_kheap(virt_addr_t v) {
   return (v.raw < VADDR_BOUND_KHEAP && v.raw >= VADDR_BOUND_RESERVED_KERNEL);

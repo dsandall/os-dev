@@ -6,5 +6,6 @@
 #define FAULT_PAGE 0x0E
 
 void recreate_gdt();
+void init_IDT();
 
 #endif

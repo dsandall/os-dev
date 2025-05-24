@@ -2,6 +2,7 @@
 #include "channel.h"
 #include "freestanding.h"
 #include "printer.h"
+#include "ps2_8042.h"
 #include "ps2_keyboard.h"
 #include <stdint.h>
 

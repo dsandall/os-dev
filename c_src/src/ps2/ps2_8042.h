@@ -1,5 +1,18 @@
 #include "freestanding.h"
 
+typedef union {
+  uint8_t raw;
+  struct {
+    unsigned output_full : 1;
+    unsigned input_full : 1;
+    unsigned sys_flag : 1;
+    unsigned to_controller : 1;
+    unsigned : 2;
+    unsigned err_timeout : 1;
+    unsigned err_parity : 1;
+  } __attribute__((packed));
+} status_register_t;
+
 #define PS2_DATA_IN_OUT 0x60
 #define PS2_RX() ((uint8_t)inb(PS2_DATA_IN_OUT))
 #define PS2_TX(x)                                                              \
@@ -22,33 +35,6 @@
     } while (x);                                                               \
   } while (0)
 
-typedef union {
-  uint8_t raw;
-  struct {
-    unsigned output_full : 1;
-    unsigned input_full : 1;
-    unsigned sys_flag : 1;
-    unsigned to_controller : 1;
-    unsigned : 2;
-    unsigned err_timeout : 1;
-    unsigned err_parity : 1;
-  } __attribute__((packed));
-} status_register_t;
-
-typedef union {
-  uint8_t raw;
-  struct {
-    unsigned en_int_p1 : 1;
-    unsigned en_int_p2 : 1;
-    unsigned sys_flag : 1;
-    unsigned : 1;
-    unsigned disable_clk_p1 : 1;
-    unsigned disable_clk_p2 : 1;
-    unsigned en_p1_translation : 1;
-    unsigned : 1;
-  } __attribute__((packed));
-} controller_configuration_byte_t;
-
 void init_PS2();
 void init_PS2_8042(void);
-status_register_t get_statusreg();
+void get_statusreg();

@@ -1,9 +1,9 @@
 #include "async/async.h"
+#include "interrupts.h"
 #include "pic_8259.h"
 #include "printer.h"
 #include "ps2_keyboard.h"
 #include <stdint.h>
-extern void init_IDT(void);
 
 // CREATE_IPC_CHANNEL_INSTANCE(vga_channel, ipc_channel_uint16,
 // VGA_CHANNEL_SIZE);
