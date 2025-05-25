@@ -4,9 +4,34 @@
 typedef struct {
   phys_addr cr3;
   struct {
-    uint64_t rsp; // stack pointer
-    uint64_t rip; // instruction pointer (put on stack when int called)
-    uint16_t cs;  // code segment (put on stack when int called)
+    // (deepest in stack/chronologically pushed first/highest address)
+    // automatic stack stored
+    uint64_t ss;     // stack segment
+    uint64_t rsp;    // stack pointer
+    uint16_t rflags; // reg flags (overflow, etc) (popped by iretq)
+    uint16_t cs;     // code segment (popped  by iretq)
+    uint64_t rip;    // instruction pointer (popped  by iretq)
+    // regular registers
+    uint64_t rax;
+    uint64_t rcx;
+    uint64_t rdx;
+    uint64_t rbx;
+    uint64_t rbp;
+    uint64_t rsi;
+    uint64_t rdi;
+    uint64_t r8;
+    uint64_t r9;
+    uint64_t r10;
+    uint64_t r11;
+    uint64_t r12;
+    uint64_t r13;
+    uint64_t r14;
+    uint64_t r15;
+    uint64_t ds; // mostly regular
+    uint64_t es; // mostly regular
+    uint64_t fs;
+    uint64_t gs;
+    // (top of stack/chronologically pushed last/lowest address)
   };
 } context_t;
 
@@ -15,8 +40,8 @@ typedef struct {
   context_t context;
 } thread_t;
 
-thread_t glbl_thread_current;
-thread_t glbl_thread_next;
+thread_t *glbl_thread_current;
+thread_t *glbl_thread_next;
 
 // Called in a loop at the end of kmain. This drives the entire
 // multi-tasking system. The next thread gets selected and run. Threads can
