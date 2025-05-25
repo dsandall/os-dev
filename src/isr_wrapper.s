@@ -10,6 +10,9 @@ extern RFLAGS_static_var
 extern RSP_static_var
 extern SS_static_var
 
+extern DS_static_var
+extern ES_static_var
+
 section .text
 bits 64
 
@@ -18,6 +21,11 @@ bits 64
 global isr_wrapper_%1
 isr_wrapper_%1:
 
+  ; ensure stack pushing is consistent for error codes
+    %if %1 != 8 && %1 != 10 && %1 != 11 && %1 != 12 && %1 != 13 && %1 != 14 && %1 != 17
+        push 0   ; Dummy error code for exceptions that don't push one
+    %endif
+
   ; hardware pushes 
   ; SS (only for ring change?)
   ; RSP (only for ring change?)
@@ -25,11 +33,6 @@ isr_wrapper_%1:
   ; CS
   ; RIP
   ; (and sometimes ERROR_CODE)
-
-  ; ensure stack pushing is consistent for error codes
-    %if %1 != 8 && %1 != 10 && %1 != 11 && %1 != 12 && %1 != 13 && %1 != 14 && %1 != 17
-        push 0   ; Dummy error code for exceptions that don't push one
-    %endif
 
     ; saving rax, as we need RAX for next checks
     push rax
@@ -82,8 +85,10 @@ isr_wrapper_%1:
     push r14
     push r15
     ; save needed for coop multitasking
-    ;push ds
-    ;push es
+    mov ax, ds
+    mov [DS_static_var], ax
+    mov ax, es
+    mov [ES_static_var], ax
     push fs
     push gs
     
@@ -95,8 +100,10 @@ isr_wrapper_%1:
     ; restore needed for coop multitasking
     pop gs
     pop fs
-    ;pop es
-    ;pop ds
+    mov ax, [ES_static_var]
+    mov es, ax
+    mov ax, [DS_static_var]
+    mov ds, ax
     ; Restore general-purpose registers
     pop r15
     pop r14

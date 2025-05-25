@@ -21,6 +21,8 @@ uint64_t RFLAGS_static_var;
 uint64_t RSP_static_var;
 uint64_t SS_static_var;
 uint64_t CS_static_var;
+uint64_t DS_static_var;
+uint64_t ES_static_var;
 
 ISR_void asm_int_handler(uint16_t vector, uint32_t error) {
   tracek("rip:%lx, rflags:%lx, oldcs:%lx\n", RIP_static_var, RFLAGS_static_var,
