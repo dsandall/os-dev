@@ -3,6 +3,7 @@
 #include "kmalloc.h"
 #include "paging.h"
 #include "printer.h"
+#include "tester.h"
 #include <stdint.h>
 
 typedef struct {
@@ -40,23 +41,23 @@ typedef struct {
 } context_t;
 
 typedef struct {
-  uint64_t tid;
+  uint64_t pid;
   context_t context;
-} thread_t;
+} Process;
 
 bool need_init = true;
-thread_t boot_thread;
-thread_t *glbl_thread_current = &boot_thread;
-thread_t *glbl_thread_next = &boot_thread;
+Process boot_thread;
+Process *glbl_thread_current = &boot_thread;
+Process *glbl_thread_next = &boot_thread;
 
-uint64_t current_tid = 1;
+uint64_t current_pid = 1;
 
 extern void print_current_thread() {
   context_t g = glbl_thread_current->context;
   tracek("rip:%p, rflags:%lx, cs:%lx,\n", g.rip, g.rflags, g.cs);
 };
 
-void PROC_add_to_scheduler(thread_t *t) {
+void PROC_add_to_scheduler(Process *t) {
   glbl_thread_next = t; // TODO:
 };
 
@@ -71,7 +72,7 @@ void PROC_create_kthread(kproc_t entry_point, void *arg) {
   // create new thread
 
   // TODO: allocate somewhere other than the heap region
-  thread_t *t = (thread_t *)kmalloc(sizeof(thread_t)).point;
+  Process *t = (Process *)kmalloc(sizeof(Process)).point;
 
   // allocate a new stack (kernel stack)
   void *stack_top =
@@ -79,7 +80,8 @@ void PROC_create_kthread(kproc_t entry_point, void *arg) {
 
   // init thread context
   //    entry_point func should be called when this thread is scheduled
-  t->tid = current_tid++;
+  *t = (Process){0};
+  t->pid = current_pid++;
   t->context.rip = entry_point; // TODO: add args
   t->context.rsp = stack_top;
   t->context.cs = 8;

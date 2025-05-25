@@ -13,6 +13,7 @@
 
 size_t strlen(const char *s);
 void *memcpy(void *dest, const void *src, size_t n);
+void *memset(void *ptr, int value, size_t num);
 
 //  __asm__("int $0x20");
 static void breakpoint() {};

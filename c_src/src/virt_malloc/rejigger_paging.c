@@ -51,8 +51,6 @@ void regenerate_page_tables() {
 
   testVirtPageAlloc();
 
-  testKmalloc();
-
   return;
 }
 
