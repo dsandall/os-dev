@@ -51,15 +51,15 @@ __attribute__((aligned(4096))) uint8_t stack_int4[STACK_SIZE];
 __attribute__((aligned(4096))) uint8_t stack_int3[STACK_SIZE];
 __attribute__((aligned(4096))) uint8_t stack_int2[STACK_SIZE];
 __attribute__((aligned(4096))) uint8_t stack_int1[STACK_SIZE];
-__attribute__((aligned(4096))) uint8_t stack_kernel3[STACK_SIZE];
-__attribute__((aligned(4096))) uint8_t stack_kernel2[STACK_SIZE];
+__attribute__((aligned(4096))) uint8_t stack_kernel0[STACK_SIZE];
 __attribute__((aligned(4096))) uint8_t stack_kernel1[STACK_SIZE];
+__attribute__((aligned(4096))) uint8_t stack_kernel2[STACK_SIZE];
 
 // the TSS
 struct TSS_t tss = {
-    .rsp0 = (uint64_t)(stack_kernel3 + STACK_SIZE), // Kernel stack (ring 0)
-    .rsp1 = (uint64_t)(stack_kernel2 + STACK_SIZE), // Kernel stack (ring 0)
-    .rsp2 = (uint64_t)(stack_kernel1 + STACK_SIZE), // Kernel stack (ring 0)
+    .rsp0 = (uint64_t)(stack_kernel0 + STACK_SIZE), // Kernel stack (ring 0)
+    .rsp1 = (uint64_t)(stack_kernel1 + STACK_SIZE), // Kernel stack (ring 0)
+    .rsp2 = (uint64_t)(stack_kernel2 + STACK_SIZE), // Kernel stack (ring 0)
     .ist1 = (uint64_t)(stack_int1 + STACK_SIZE),    // #GP stack
     .ist2 = (uint64_t)(stack_int2 + STACK_SIZE),    // #DF stack
     .ist3 = (uint64_t)(stack_int3 + STACK_SIZE),    // #PF stack

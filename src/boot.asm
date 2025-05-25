@@ -8,7 +8,7 @@ extern long_mode_start
 extern kernel_p4_table
 extern kernel_p3_table
 extern identity_p2_table
-extern stack_kernel1
+extern stack_kernel0
 
 ; data passed by grub
 extern multiboot_pointer
@@ -18,7 +18,7 @@ section .text
 bits 32
 start:
   ; initialize stack pointer reg (esp)
-  mov esp, stack_kernel1 + 4096
+  mov esp, stack_kernel0 + 4096
 
   ; store GRUB data to static location
   mov [multiboot_pointer], ebx

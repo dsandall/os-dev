@@ -4,7 +4,7 @@
 #include "freestanding.h"
 
 // #define PHYSICAL_ALLOCATOR_STRESSTEST
-// #define VIRT_ALLOCATOR_STRESSTEST
+#define VIRT_ALLOCATOR_STRESSTEST
 // #define KMALLOC_STRESSTEST
 
 void testPageAllocator();

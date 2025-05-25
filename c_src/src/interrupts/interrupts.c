@@ -109,6 +109,7 @@ ISR_void exception_handler(uint32_t vector, uint32_t error) {
     ERR_LOOP();
   case 0x01:
     tracek("Debug exception\n");
+    ERR_LOOP();
   case 0x02:
     tracek("Non-maskable interrupt (NMI)\n");
     ERR_LOOP();

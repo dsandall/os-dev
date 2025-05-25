@@ -196,8 +196,8 @@ save_stack_to_current_thread:
 load_next_thread_to_stack:
     ; rbx = &glbl_thread_next->context WARN:
     
-    mov rbx, [glbl_thread_next]  ; reg <-(pointer) [label]
-    add rbx, 8          ; reg <-(pointer.context)[pointer + 8]
+    mov rbx, [glbl_thread_next]
+    add rbx, 8
 
     ; copy the stack to the context struck, from gs to rflags (no rsp/ss)
     %assign z 0

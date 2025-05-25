@@ -80,9 +80,7 @@ void PROC_create_kthread(kproc_t entry_point, void *arg) {
   // init thread context
   //    entry_point func should be called when this thread is scheduled
   t->tid = current_tid++;
-  // t->context = glbl_thread_current->context;
   t->context.rip = entry_point; // TODO: add args
-  tracek("rip is : %p\n", entry_point);
   t->context.rsp = stack_top;
   t->context.cs = 8;
   t->context.rflags = 0x202;
