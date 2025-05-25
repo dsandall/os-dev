@@ -1,3 +1,4 @@
+#include "coop.h"
 #include "freestanding.h"
 #include "interrupts.h"
 #include "kmalloc.h"
@@ -40,7 +41,10 @@ void kernel_main() {
   spawn_task(ps2_rx_task, NULL, NULL);
   spawn_task(hw_serial_task, NULL, NULL);
 
-  RESUME(true);
+  // RESUME(true);
+
+  PROC_run();
+
   while (1) {
     run_tasks();
   }

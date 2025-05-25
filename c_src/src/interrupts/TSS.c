@@ -47,19 +47,23 @@ struct __attribute__((aligned(16))) __attribute__((packed)) TSSDescriptor {
 
 // Define the stack arrays (aligned to 4 KiB for TSS)
 #define STACK_SIZE (16384) // 16 KiB stack size
+__attribute__((aligned(4096))) uint8_t stack_int4[STACK_SIZE];
 __attribute__((aligned(4096))) uint8_t stack_int3[STACK_SIZE];
 __attribute__((aligned(4096))) uint8_t stack_int2[STACK_SIZE];
 __attribute__((aligned(4096))) uint8_t stack_int1[STACK_SIZE];
-__attribute__((aligned(4096))) uint8_t stack_kernel[STACK_SIZE];
+__attribute__((aligned(4096))) uint8_t stack_kernel3[STACK_SIZE];
+__attribute__((aligned(4096))) uint8_t stack_kernel2[STACK_SIZE];
+__attribute__((aligned(4096))) uint8_t stack_kernel1[STACK_SIZE];
 
 // the TSS
 struct TSS_t tss = {
-    .rsp0 = (uint64_t)(stack_kernel + STACK_SIZE), // Kernel stack (ring 0)
-    .rsp1 = (uint64_t)(stack_kernel + STACK_SIZE), // Kernel stack (ring 0)
-    .rsp2 = (uint64_t)(stack_kernel + STACK_SIZE), // Kernel stack (ring 0)
-    .ist1 = (uint64_t)(stack_int1 + STACK_SIZE),   // #GP stack
-    .ist2 = (uint64_t)(stack_int2 + STACK_SIZE),   // #DF stack
-    .ist3 = (uint64_t)(stack_int3 + STACK_SIZE),   // #PF stack
+    .rsp0 = (uint64_t)(stack_kernel3 + STACK_SIZE), // Kernel stack (ring 0)
+    .rsp1 = (uint64_t)(stack_kernel2 + STACK_SIZE), // Kernel stack (ring 0)
+    .rsp2 = (uint64_t)(stack_kernel1 + STACK_SIZE), // Kernel stack (ring 0)
+    .ist1 = (uint64_t)(stack_int1 + STACK_SIZE),    // #GP stack
+    .ist2 = (uint64_t)(stack_int2 + STACK_SIZE),    // #DF stack
+    .ist3 = (uint64_t)(stack_int3 + STACK_SIZE),    // #PF stack
+    .ist4 = (uint64_t)(stack_int4 + STACK_SIZE),    // #trap stack
     .reserved2 = 0,
     .reserved3 = 0,
     .iomap_base = sizeof(tss)};
@@ -97,8 +101,6 @@ static const int tss_index = 2;
 
 void recreate_gdt() {
 
-  breakpoint(); // for viewing the code selector
-
   (gdt)[0] = (gdt_entry_t)0UL; // Null descriptor
   (gdt)[1] = (gdt_entry_t){.executable = 1,
                            .non_system = 1,
@@ -129,9 +131,7 @@ void recreate_gdt() {
   // verify
   uint16_t tr;
   __asm__ volatile("str %0" : "=r"(tr));
-  if (tr != tss_selector) {
-    ERR_LOOP();
-  }
+  ASSERT(tr == tss_selector);
 }
 
 static void gdt_install_tss(struct TSSDescriptor *tss_desc) {

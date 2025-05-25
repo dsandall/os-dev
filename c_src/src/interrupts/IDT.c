@@ -56,6 +56,7 @@ void init_IDT(void) {
 
   for (int i = 0; i < IDT_size; i++) {
     uint64_t addr = (uint64_t)isr_wrappers[i];
+
     interrupt_descriptor_table[i] =
         (Interrupt_CGD_t){.add_1 = addr,
                           .add_2 = addr >> 16,
@@ -69,8 +70,11 @@ void init_IDT(void) {
 
   // assign certain faults their own stack
   interrupt_descriptor_table[FAULT_GENERAL_PROTECTION].IST_index = 1;
-  interrupt_descriptor_table[FAULT_DOUBLE].IST_index = 1;
-  interrupt_descriptor_table[FAULT_PAGE].IST_index = 1;
+  interrupt_descriptor_table[FAULT_DOUBLE].IST_index = 2;
+  interrupt_descriptor_table[FAULT_PAGE].IST_index = 3;
+
+  interrupt_descriptor_table[0x80].IST_index = 4;
+  interrupt_descriptor_table[0x80].gate_type = X86_GATETYPE_TRAP;
 
   lidt(&interrupt_descriptor_table,
        (uint16_t)(sizeof(Interrupt_CGD_t) * IDT_size) - 1);

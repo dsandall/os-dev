@@ -16,17 +16,7 @@
 
 ISR_void exception_handler(uint32_t vector, uint32_t error);
 
-uint64_t RIP_static_var;
-uint64_t RFLAGS_static_var;
-uint64_t RSP_static_var;
-uint64_t SS_static_var;
-uint64_t CS_static_var;
-uint64_t DS_static_var;
-uint64_t ES_static_var;
-
 ISR_void asm_int_handler(uint16_t vector, uint32_t error) {
-  tracek("rip:%lx, rflags:%lx, oldcs:%lx\n", RIP_static_var, RFLAGS_static_var,
-         CS_static_var);
   if (vector < 0x20) {
     // exceptions
     exception_handler(vector, error);
@@ -35,6 +25,8 @@ ISR_void asm_int_handler(uint16_t vector, uint32_t error) {
     // Hardware IRQs (0x20 - 0x2F)
     PIC_common_handler(vector);
     return;
+  } else if (vector == 0x80) {
+    tracek("yielding\n");
   } else {
     tracek("Unknown CPU exception: 0x%x\n", vector);
     ERR_LOOP();
@@ -117,7 +109,6 @@ ISR_void exception_handler(uint32_t vector, uint32_t error) {
     ERR_LOOP();
   case 0x01:
     tracek("Debug exception\n");
-    ERR_LOOP();
   case 0x02:
     tracek("Non-maskable interrupt (NMI)\n");
     ERR_LOOP();
@@ -150,6 +141,7 @@ ISR_void exception_handler(uint32_t vector, uint32_t error) {
   case FAULT_GENERAL_PROTECTION:
     // NOTE: Unique Stack
     tracek("General protection fault\n");
+    tracek("error is %d\n", error);
     ERR_LOOP();
     goto exit_err_loop;
   case FAULT_PAGE:
