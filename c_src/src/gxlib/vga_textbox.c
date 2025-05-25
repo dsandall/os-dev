@@ -10,21 +10,7 @@
 extern position_t VGA_cursor;
 extern vga_char_t *VGA_ptr();
 
-void clear_Textbox(Textbox_t *box) {
-
-  for (int x = box->x_corner; x < (box->width + box->x_corner); x++) {
-    VGA_cursor.x = x;
-    for (int y = box->y_corner; y < (box->height + box->y_corner); y++) {
-      VGA_cursor.y = y;
-      VGA_display_char(' ', box->fg, box->bg);
-    }
-  }
-
-  box->cursor.x = box->x_corner;
-  box->cursor.y = box->y_corner;
-};
-
-void scroll_Textbox(Textbox_t *box) {
+static void scroll_Textbox(Textbox_t *box) {
 
   for (int y = box->y_corner; y < (box->height + box->y_corner - 1); y++) {
     for (int x = box->x_corner; x < (box->width + box->x_corner); x++) {
@@ -40,7 +26,7 @@ void scroll_Textbox(Textbox_t *box) {
   }
 }
 
-void clear_Line(Textbox_t *box) {
+static void clear_Line(Textbox_t *box) {
 
   int y = box->height + box->y_corner - 1;
   for (int x = box->x_corner; x < (box->width + box->x_corner); x++) {
@@ -91,6 +77,20 @@ void print_char_tobox_immediate(char c, Textbox_t *box) {
     tc->y = box->y_corner + box->height - 1;
   }
 }
+
+void clear_Textbox(Textbox_t *box) {
+
+  for (int x = box->x_corner; x < (box->width + box->x_corner); x++) {
+    VGA_cursor.x = x;
+    for (int y = box->y_corner; y < (box->height + box->y_corner); y++) {
+      VGA_cursor.y = y;
+      VGA_display_char(' ', box->fg, box->bg);
+    }
+  }
+
+  box->cursor.x = box->x_corner;
+  box->cursor.y = box->y_corner;
+};
 
 ///////////////////////////////////
 ///////////////////////////////////

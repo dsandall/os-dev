@@ -1,83 +1,155 @@
 #include "coop.h"
+#include "freestanding.h"
+#include "kmalloc.h"
 #include "paging.h"
+#include "printer.h"
+#include <errno.h>
+#include <iso646.h>
 #include <stdint.h>
-typedef struct {
-  phys_addr cr3;
-  struct {
-    uint64_t rsp; // stack pointer
-    uint64_t rip; // instruction pointer (put on stack when int called)
-    uint16_t cs;  // code segment (put on stack when int called)
-  };
-} context_t;
 
-typedef struct {
-  uint64_t tid;
-  context_t context;
-} thread_t;
+bool need_init = true;
+Process boot_thread = {.context = {0}, 0, 777, &boot_thread};
+Process *glbl_thread_current = &boot_thread;
+Process *glbl_thread_on_deck = &boot_thread;
 
-thread_t glbl_thread_current;
-thread_t glbl_thread_next;
+void PROC_add_to_scheduler(Process *t) {
+  // insert in list
 
-// Called in a loop at the end of kmain. This drives the entire
-// multi-tasking system. The next thread gets selected and run. Threads can
-// yield, exit, etc. If no thread is able to run then PROC_run() returns.
-void PROC_run(void) {
+  // if (glbl_thread_current == &boot_thread) {
+  //   tracek(
+  //       "initializing scheduler with first process, removing
+  //       boot_thread!\n");
+  //   ASSERT(glbl_thread_on_deck == &boot_thread);
+  //   glbl_thread_current = t;
+  //   glbl_thread_on_deck = t;
+  //   t->next = t;
+  //   return;
+  // }
 
+  Process *list = glbl_thread_current->next;
+
+  if (list == NULL) {
+    ERR_LOOP();
+    tracek("WARNING: LIST is NULL!\n");
+    list = glbl_thread_current;
+  }
+
+  glbl_thread_current->next = t;
+  ASSERT(t);
+
+  t->next = list;
+  ASSERT(t->next);
 };
 
-// Adds a new thread to the multi-tasking system. This requires allocating a new
-// stack in the virtual address space and initializing the thread's context such
-// that the entry_point function gets executed the next time this thread is
-// scheduled. This function does not actually schedule the thread.
-void PROC_create_kthread(kproc_t entry_point, void *arg) {
+Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
   // create new thread
 
+  // TODO: allocate somewhere other than the heap region
+  Process *t = (Process *)kmalloc(sizeof(Process));
+
   // allocate a new stack (kernel stack)
+  void *stack_base = (void *)(kmalloc(PAGE_SIZE * 10));
+  void *stack_top = stack_base + PAGE_SIZE * 10; // stack grows down
+
+  // Reserve space for fake return address
+  stack_top -= sizeof(void *);
+  *(uint64_t *)stack_top = (uint64_t)kexit;
 
   // init thread context
   //    entry_point func should be called when this thread is scheduled
 
+  static uint64_t current_pid = 1;
+  t->pid = current_pid++;
+  t->magic = 777;
+  t->context.rip = entry_point;
+  t->context.rsp = stack_top;
+  t->context.cs = 8;
+  t->context.rflags = 0x202;
+  t->context.rdi = (uint64_t)arg; // TODO: support better args
+  t->dead = false;
+
+  PROC_add_to_scheduler(t);
+
+  return t;
 };
 
-// Selects the next thread to run. It must select the "thread" that called
-// PROC_run if not other threads are available to run. This function does not
-// actually perform a context switch.
 void PROC_reschedule(void) {
-  // scheduler (round robin)
+  try:
+    if (glbl_thread_current->next == NULL) {
+      ERR_LOOP();
+    } else if (glbl_thread_current->next == &boot_thread) {
+      tracek("first time returning to boot thread, remove from list\n");
+      glbl_thread_current->next = glbl_thread_current->next->next;
+      goto try;
 
-  // defaults to the original kernel thread (the one that called proc run)
-
-  // does not actually switch
+    } else if (glbl_thread_current->next == glbl_thread_current) {
+      // no other threads are available
+      if (glbl_thread_current->dead) {
+        tracek("YIELD - all threads dead, returning to boot_thread\n");
+        glbl_thread_on_deck = &boot_thread;
+      } else {
+        tracek("YIELD - returning to yielder\n");
+      }
+    } else {
+      // other threads available
+      if (glbl_thread_current->next->dead) {
+        // prune threads
+        tracek("YIELD - next is dead, removing and rescheduling\n");
+        glbl_thread_current->next = glbl_thread_current->next->next;
+        goto try;
+      } else {
+        // tracek("YIELD - selecting next\n");
+        glbl_thread_on_deck = glbl_thread_current->next;
+      }
+    }
 };
 
-// Invokes the scheduler and passes control to the next eligible thread. It is
-// possible to return to the thread that called yield if no other eligible
-// threads exist. To make context switch implementation more consistent, and
-// your life slightly easier, I suggest making yield() a trap that calls the
-// actual yield implementation. This way the stack frame is always the same and
-// you can reuse the assembly interrupt handler you have already written. An
-// example implementation of yield which just triggers trap number 123 is:
-//
-// static inline void yield(void) { asm volatile("INT $123"); }
-void yield(void) {
-  // passes control to next thread (called by any (kernel?) thread)
-  // can return to itself
-  // should be a trap instruction that calls the actual implementation
-  //    this is to have a consistent yield stack (tss mentioned)
+ISR_void syscall_handler(uint64_t syscall_num) {
+  if (syscall_num == SYSCALL_YIELD) {
+    PROC_reschedule();
+  } else if (syscall_num == SYSCALL_KEXIT) {
+    tracek("exiting\n");
+    glbl_thread_current->dead = true;
+    // TODO: free stuff
+    PROC_reschedule();
+  } else {
+    ERR_LOOP();
+  }
 };
 
-// Exits and destroys all the state of the thread that calls kexit. Needs to run
-// the scheduler to pick another process. I also suggest you use a trap-based
-// implementation AND the IST mechanism so that the trap handler runs on a
-// different stack. Running on a different stack makes it possible to free the
-// thread's stack without pulling the rug out from under yourself.
-void kexit(void) {
-  // destroys the calling thread
+void yield(void) { syscall(SYSCALL_YIELD); };
 
-  // ends by calling scheduler
+__attribute__((noreturn)) void kexit(void) {
+  syscall(SYSCALL_KEXIT);
+  ERR_LOOP();
+};
 
-  // should also be trap based
-  // (IST - interrupt stack table)
-  // has own stack, so you don't destroy yourself while still existing
+void inner(uint64_t arg) {
+  uint64_t counter = arg;
+  while (counter) {
+    tracek("inner_hello (%lu/%lu)\n", counter--, arg);
+    yield();
+  }
+  tracek("goodbye! (%lu/%lu)\n", counter, arg);
+  // kexit(); // implicit
+}
 
+void some_thing(void *arg) {
+  tracek("celebrate (%lu)\n", (uint64_t)arg);
+  // yield();
+  inner((uint64_t)arg);
+};
+
+void PROC_run(void) {
+
+  // PROC_create_kthread(some_thing, (void *)5);
+  // PROC_create_kthread(some_thing, (void *)3);
+  // PROC_create_kthread(some_thing, (void *)2);
+
+  tracek("og says bye\n");
+
+  yield();
+
+  tracek(
+      "all threads successfully exited, and we have returned to boot thread\n");
 };

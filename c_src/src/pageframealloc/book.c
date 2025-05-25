@@ -72,6 +72,8 @@ int makePhysPage(phys_mem_region_t available) {
 
     ASSERT(!(page->next == NULL && free_list != NULL));
 
+    BREAK_IF(page >= (0x400000000 - PAGE_SIZE));
+
     free_list = page; // set the new head
 
     base += PAGE_SIZE; // and keep going
@@ -83,6 +85,7 @@ int makePhysPage(phys_mem_region_t available) {
 
 phys_addr unsafe_MMU_pf_alloc(void) {
   void *next_free_page = (void *)free_list;
+  BREAK_IF(next_free_page >= (0x400000000 - PAGE_SIZE));
 
   if (next_free_page == NULL) {
     return (phys_addr)NULL;

@@ -175,6 +175,9 @@ bool MMU_free_page(virt_addr_t v) {
   ASSERT(is_in_kheap(heap_pointer));
   ASSERT(res.lvl = FOUR_KAY);
 
+  // TODO: if you want to return virtual addresses, you need to call an asm
+  // function to flush the TLB
+
   return MMU_pf_free(from_entry(res, v));
 };
 

@@ -2,6 +2,49 @@
 #define COOP_H
 
 #include "freestanding.h"
+#include <stdint.h>
+
+typedef struct {
+  struct {
+    // (deepest in stack/chronologically pushed first/highest address)
+    // automatic stack stored
+    uint64_t ss;     // stack segment
+    void *rsp;       // stack pointer
+    uint64_t rflags; // reg flags (overflow, etc) (popped by iretq)
+    uint64_t cs;     // code segment (popped  by iretq)
+    void *rip;       // instruction pointer (popped  by iretq)
+    // regular registers
+    uint64_t rax;
+    uint64_t rcx;
+    uint64_t rdx;
+    uint64_t rbx;
+    uint64_t rbp;
+    uint64_t rsi;
+    uint64_t rdi;
+    uint64_t r8;
+    uint64_t r9;
+    uint64_t r10;
+    uint64_t r11;
+    uint64_t r12;
+    uint64_t r13;
+    uint64_t r14;
+    uint64_t r15;
+    uint64_t ds; // mostly regular
+    uint64_t es; // mostly regular
+    uint64_t fs;
+    uint64_t gs;
+    // (top of stack/chronologically pushed last/lowest address)
+  };
+  // void *cr3; // TODO:
+} context_t;
+
+typedef struct Process {
+  context_t context;
+  int pid;
+  int magic;
+  struct Process *next;
+  bool dead;
+} Process;
 
 typedef void (*kproc_t)(void *);
 
@@ -14,7 +57,7 @@ void PROC_run(void);
 // stack in the virtual address space and initializing the thread's context such
 // that the entry_point function gets executed the next time this thread is
 // scheduled. This function does not actually schedule the thread.
-void PROC_create_kthread(kproc_t entry_point, void *arg);
+Process *PROC_create_kthread(kproc_t entry_point, void *arg);
 
 // Selects the next thread to run. It must select the "thread" that called
 // PROC_run if not other threads are available to run. This function does not

@@ -1,5 +1,6 @@
 #include "book.h"
 #include "freestanding.h"
+#include "paging.h"
 #include "printer.h"
 #include "rejigger_paging.h"
 #include "virtpage_alloc.h"
@@ -72,10 +73,14 @@ void kfree(virt_addr_t addr) {
 
   if (header->pool != CUSTOM_POOL_MAGIC) {
     // memory came from a pool, add the block to the pool stack
+    tracek("NOT deallocating %lu bytes from static pool\n", header->size);
+    return; // WARN: broken by snakes
     push(header, header->pool);
   } else {
     // special allocation, deallocate pages
     uint64_t pages = CIELING_DIV(header->size, PAGE_SIZE);
+    tracek("deallocating %lu pages\n", pages);
+
     virt_addr_t start = {.raw = (uint64_t)header};
 
     for (; pages > 0; pages--) {
@@ -109,7 +114,7 @@ virt_addr_t kmalloc(size_t size) {
   struct KmallocExtra *ret = 0;
   size_t allocated_size;
 
-  tracek("attempting to allocate %lu bytes\n", ns);
+  // tracek("attempting to allocate %lu bytes\n", ns);
 
   if (pool_index) {
     // fits into existing pools
@@ -131,13 +136,14 @@ virt_addr_t kmalloc(size_t size) {
     ret = pop(p);
     allocated_size = p->max_size;
 
-    tracek("allocated from static pool of size %lu\n", allocated_size);
+    // tracek("allocated from static pool of size %lu\n", allocated_size);
   } else {
     // custom pool
     p = CUSTOM_POOL_MAGIC;
 
     // allocate virt pages
     uint64_t necessary_pages = CIELING_DIV(ns, PAGE_SIZE);
+    tracek("allocating %lu pages\n", necessary_pages);
 
     for (uint64_t i = 0; i < necessary_pages; i++) {
       virt_addr_t v = MMU_alloc_page();
@@ -148,7 +154,7 @@ virt_addr_t kmalloc(size_t size) {
 
     allocated_size = necessary_pages * PAGE_SIZE;
 
-    tracek("allocated custom pool of size %lu\n", allocated_size);
+    // tracek("allocated custom pool of size %lu\n", allocated_size);
   }
 
   // place the header
@@ -157,5 +163,11 @@ virt_addr_t kmalloc(size_t size) {
 
   // return incremented address
   ASSERT(is_in_kheap((virt_addr_t){.raw = (uint64_t)ret}));
-  return (virt_addr_t){.raw = (uint64_t)ret + sizeof(struct KmallocExtra)};
+
+  virt_addr_t vret =
+      (virt_addr_t){.raw = (uint64_t)ret + sizeof(struct KmallocExtra)};
+
+  tracek("handed out: %p from pool %d with requested size %lx\n", vret,
+         pool_index, size);
+  return vret;
 };

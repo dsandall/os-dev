@@ -1,7 +1,11 @@
+
+#ifndef KMALLOC_H
+#define KMALLOC_H
+
 #include "freestanding.h"
 #include "paging.h"
 
-virt_addr_t kmalloc(size_t size);
-void kfree(virt_addr_t addr);
+void *kmalloc(size_t size);
+void kfree(void *addr);
 
-void testKmalloc();
+#endif // KMALLOC_H
