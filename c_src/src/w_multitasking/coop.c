@@ -11,13 +11,6 @@ Process boot_thread;
 Process *glbl_thread_current = &boot_thread;
 Process *glbl_thread_next = &boot_thread;
 
-uint64_t current_pid = 1;
-
-extern void print_current_thread() {
-  context_t g = glbl_thread_current->context;
-  tracek("rip:%p, rflags:%lx, cs:%lx,\n", g.rip, g.rflags, g.cs);
-};
-
 void PROC_add_to_scheduler(Process *t) {
   glbl_thread_next = t; // TODO:
 };
@@ -41,6 +34,8 @@ void PROC_create_kthread(kproc_t entry_point, void *arg) {
 
   // init thread context
   //    entry_point func should be called when this thread is scheduled
+
+  static uint64_t current_pid = 1;
   *t = (Process){0};
   t->pid = current_pid++;
   t->context.rip = entry_point; // TODO: add args
