@@ -2,15 +2,13 @@
 ////// Snakes Support
 ///////////////////////////////////////////////////////////////////////
 
+#include "coop.h"
 #include "vga_textbox.h"
 #include "vgalib.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 ///// Processes
 ///////////////////////////////////////////////////////////////////////////////
-typedef struct {
-  int pid;
-} Process; // WARN:
 // The struct Process contains a pid field. Each process in the system must have
 // a unique ID (use a monotonically incrementing counter). The field type must
 // be int.
@@ -21,7 +19,7 @@ typedef struct {
 extern void yield(void);
 // System call as described above that yields control to another process
 
-extern Process *curr_proc; // WARN:
+extern Process *curr_proc;
 // A curr_proc global variable that points to the current running process (type
 // is assumed to be struct Process)
 

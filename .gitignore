@@ -4,7 +4,7 @@ unpackDevEnv
 **.bin
 **.o
 
-
+./build/*
 .gdb_history
 # Prerequisites
 *.d
