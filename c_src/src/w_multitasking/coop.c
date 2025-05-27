@@ -3,26 +3,30 @@
 #include "kmalloc.h"
 #include "paging.h"
 #include "printer.h"
-#include "tester.h"
 #include <stdint.h>
 
 bool need_init = true;
-Process boot_thread;
+Process boot_thread = {.context = {0}, 0, &boot_thread};
 Process *glbl_thread_current = &boot_thread;
-Process *glbl_thread_next = &boot_thread;
+Process *glbl_thread_on_deck = &boot_thread;
 
 void PROC_add_to_scheduler(Process *t) {
-  glbl_thread_next = t; // TODO:
+  // insert in list
+  Process *list = glbl_thread_current->next;
+
+  if (list == NULL) {
+    tracek("LIST is NULL!\n");
+    list = glbl_thread_current;
+  }
+
+  glbl_thread_current->next = t;
+  ASSERT(t);
+
+  t->next = list;
+  ASSERT(t->next);
 };
 
-// Adds a new thread to the multi-tasking system. This requires allocating a new
-// stack in the virtual address space and initializing the thread's context such
-// that the entry_point function gets executed the next time this thread is
-// scheduled. This function does not actually schedule the thread.
-
-__attribute__((aligned(4096))) uint8_t stack_test[16384];
-
-void PROC_create_kthread(kproc_t entry_point, void *arg) {
+Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
   // create new thread
 
   // TODO: allocate somewhere other than the heap region
@@ -42,58 +46,80 @@ void PROC_create_kthread(kproc_t entry_point, void *arg) {
   t->context.rsp = stack_top;
   t->context.cs = 8;
   t->context.rflags = 0x202;
+  t->context.rdi = (uint64_t)arg;
 
-  // immediately add to scheduler
   PROC_add_to_scheduler(t);
+
+  return t;
 };
 
 void PROC_reschedule(void) {
-  // TODO:
-  // scheduler (round robin)
 
-  // defaults to the original kernel thread (the one that called proc run)
-
-  // does not actually switch
-};
-
-void yield(void) {
-  // passes control to next thread (called by any (kernel?) thread)
-  // can return to itself
-  // should be a trap instruction that calls the actual implementation
-  //    this is to have a consistent yield stack (tss mentioned)
-  __asm__("int $0x80");
-};
-
-ISR_void yield_actual(void) { PROC_reschedule(); }
-
-void kexit(void) {
-  // destroys the calling thread
-
-  // ends by calling scheduler
-
-  // should also be trap based
-  // (IST - interrupt stack table)
-  // has own stack, so you don't destroy yourself while still existing
-
-};
-
-void some_thing() {
-  breakpoint();
-
-  while (1) {
-    tracek("celebrate\n");
+  if (glbl_thread_current->next == NULL) {
+    ERR_LOOP();
+  } else if (glbl_thread_current->next == glbl_thread_current) {
+    tracek("returning to yielded thread\n");
+    // glbl_thread_on_deck->context.cs = 8; // WARN: debug
+  } else {
+    tracek("selecting next thread\n");
+    glbl_thread_on_deck = glbl_thread_current->next;
+    // glbl_thread_on_deck->context.cs = 8; // WARN: debug
   }
+};
 
-  kexit();
+ISR_void syscall_handler(uint64_t syscall_num) {
+  if (syscall_num == SYSCALL_YIELD) {
+    tracek("yielding\n");
+    PROC_reschedule();
+  } else if (syscall_num == SYSCALL_KEXIT) {
+    tracek("exiting\n");
+    ERR_LOOP();
+
+    // Process **pp = &glbl_thread_current;
+
+    // ASSERT(*pp != NULL);
+
+    // while (*pp) {
+    //   if (*pp == glbl_thread_current) {
+    //     *pp = glbl_thread_current->next;
+    //     break;
+    //   }
+    //   pp = &(*pp)->next;
+    // }
+
+  } else {
+    ERR_LOOP();
+  }
+};
+
+void yield(void) { syscall(SYSCALL_YIELD); };
+
+void kexit(void) { syscall(SYSCALL_KEXIT); };
+
+void some_thing(void *arg) {
+  while (1) {
+    tracek("celebrate (%lx)\n", (uint64_t)arg);
+    yield();
+  }
 };
 
 void PROC_run(void) {
-  // glbl_thread_current = (thread_t *)kmalloc(sizeof(thread_t)).point;
-  //*(uint64_t *)glbl_thread_current = 0;
 
-  PROC_create_kthread(some_thing, NULL);
+  boot_thread.next = &boot_thread;
+
+  // tracek("og says hi\n");
+  // yield();
+  // tracek("og says hi\n");
+  // yield();
+  // tracek("og says hi\n");
+  // yield();
+
+  PROC_create_kthread(some_thing, (void *)0x11);
+  PROC_create_kthread(some_thing, (void *)0x22);
 
   while (1) {
+    tracek("og says hi\n");
+
     yield();
   }
 };

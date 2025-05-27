@@ -5,7 +5,7 @@ extern asm_int_handler
 extern boot_thread
 extern need_init 
 extern glbl_thread_current
-extern glbl_thread_next
+extern glbl_thread_on_deck
 
 section .text
 bits 64
@@ -58,6 +58,7 @@ isr_wrapper_%1:
     cld
     mov rdi, %1 ; place interrupt vector in rdi (first function arg reg, sysv calling conventions)
     mov rsi, [rsp + 19*8]    ; 2nd arg: error code (at top of stack before saving context)
+    mov rdx, [rsp + 18*8]    ; 3rd arg: syscall number (passed as rax, taken from stack) 
     call asm_int_handler
 
     mov r11, rsp
@@ -65,7 +66,7 @@ isr_wrapper_%1:
 
     ; check if context switch is needed
     mov rax, [glbl_thread_current]
-    mov rbx, [glbl_thread_next]
+    mov rbx, [glbl_thread_on_deck]
     cmp rax, rbx
     je return_no_context_switch
     ; else...
@@ -79,7 +80,7 @@ isr_wrapper_%1:
     add rsp, 16
  
     ; record the switch
-    mov rax, [glbl_thread_next]
+    mov rax, [glbl_thread_on_deck]
     mov [glbl_thread_current], rax
     ; proceed to next thread
     jmp return_yes_context_switch
@@ -156,12 +157,12 @@ return_yes_context_switch:
 save_stack_to_current_thread:
 
     mov rbx, [glbl_thread_current] ; reg <-(pointer) [label]
-    add rbx, 8          ; reg <-(pointer.context)[pointer + 8]
+    ;add rbx, 8          ; reg <-(pointer.context)[pointer + 8]
 
 .copy_stack:
     ; copy the stack to the context struck, from gs to rflags (no rsp/ss)
     %assign z 0
-    %rep 22
+    %rep 23
         mov rax, [r11 + 8*(z+1)] ; read stack
         mov [rbx + 8*(24-z)], rax ; place in struct
 
@@ -178,15 +179,15 @@ save_stack_to_current_thread:
     jne .thread_was_not_kernel
 .was_kernel:
     ; //WARN: dummy ss and rsp
-    mov qword [rbx + 16], rsp; [RSP_static_var]
-    mov qword [rbx + 8], ss; [SS_static_var]
+    ;mov qword [rbx + 16], rsp; [RSP_static_var]
+    ;mov qword [rbx + 8], ss; [SS_static_var]
     jmp .check_done
 .thread_was_not_kernel:
     ; save SS and RSP, as they should have been pushed to stack
-    mov rax, [r11 + 23*8]; [RSP_static_var]
-    mov [rbx + 16], rax
-    mov rax, [r11 + 24*8] ; [SS_static_var]
-    mov [rbx + 8], rax
+    ;mov rax, [r11 + 23*8]; [RSP_static_var]
+    ;mov [rbx + 16], rax
+    ;mov rax, [r11 + 24*8] ; [SS_static_var]
+    ;mov [rbx + 8], rax
     jmp .check_done
 .check_done:
     ret
@@ -196,12 +197,12 @@ save_stack_to_current_thread:
 load_next_thread_to_stack:
     ; rbx = &glbl_thread_next->context WARN:
     
-    mov rbx, [glbl_thread_next]
-    add rbx, 8
+    mov rbx, [glbl_thread_on_deck]
+    ;add rbx, 8
 
     ; copy the stack to the context struck, from gs to rflags (no rsp/ss)
     %assign z 0
-    %rep 24
+    %rep 23
         mov rax, [rbx + 8*(24-z)] ; access stored
         mov [r11 + 8*(z+1)], rax ; place on stack
 

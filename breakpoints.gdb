@@ -83,17 +83,21 @@ break ps2_onkeypressevent
 #break isr_wrapper_59
 #break isr_wrapper_60
 break isr_wrapper_128
+break isr_wrapper_14
+break what_the_fuck_128
+break what_the_fuck_14
 #break pageFault_handler
 #break testKmalloc 
 #break src/kmalloc.c:197
 #break try_init
 #break alloc_helper
-break load_next_thread_to_stack
+#break load_next_thread_to_stack
 
 
+break PROC_add_to_scheduler
+break breakpoint
 
-#break breakpoint
-disp *glbl_thread_current
-disp *glbl_thread_next
 layout split
 c
+
+

@@ -16,6 +16,5 @@
 -Isrc/pageframealloc
 -Isrc/virt_malloc
 -Isrc/w_multitasking
--Isrc/x_snakes
 -fPIC
 

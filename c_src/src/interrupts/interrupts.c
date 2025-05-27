@@ -15,8 +15,10 @@
 ///////////////////////////////////////
 
 ISR_void exception_handler(uint32_t vector, uint32_t error);
+extern ISR_void syscall_handler(uint64_t syscall_num);
 
-ISR_void asm_int_handler(uint16_t vector, uint32_t error) {
+ISR_void asm_int_handler(uint16_t vector, uint32_t error,
+                         uint64_t syscall_num) {
   if (vector < 0x20) {
     // exceptions
     exception_handler(vector, error);
@@ -26,7 +28,7 @@ ISR_void asm_int_handler(uint16_t vector, uint32_t error) {
     PIC_common_handler(vector);
     return;
   } else if (vector == 0x80) {
-    tracek("yielding\n");
+    syscall_handler(syscall_num);
   } else {
     tracek("Unknown CPU exception: 0x%x\n", vector);
     ERR_LOOP();

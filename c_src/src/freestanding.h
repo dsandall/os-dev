@@ -11,6 +11,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define SYSCALL_YIELD 77
+#define SYSCALL_KEXIT 76
+
+static void syscall(uint64_t syscall_number) {
+  __asm__ volatile("mov %[input], %%rax"
+                   :
+                   : [input] "r"(syscall_number)
+                   : "rax");
+  __asm__("int $0x80");
+}
+
 size_t strlen(const char *s);
 void *memcpy(void *dest, const void *src, size_t n);
 void *memset(void *ptr, int value, size_t num);

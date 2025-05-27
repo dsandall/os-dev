@@ -2,6 +2,7 @@
 #define COOP_H
 
 #include "freestanding.h"
+#include <stdint.h>
 
 typedef struct {
   struct {
@@ -34,12 +35,13 @@ typedef struct {
     uint64_t gs;
     // (top of stack/chronologically pushed last/lowest address)
   };
-  void *cr3; // TODO:
+  // void *cr3; // TODO:
 } context_t;
 
 typedef struct {
-  uint64_t pid;
   context_t context;
+  uint64_t pid;
+  void *next;
 } Process;
 
 typedef void (*kproc_t)(void *);
@@ -53,7 +55,7 @@ void PROC_run(void);
 // stack in the virtual address space and initializing the thread's context such
 // that the entry_point function gets executed the next time this thread is
 // scheduled. This function does not actually schedule the thread.
-void PROC_create_kthread(kproc_t entry_point, void *arg);
+Process *PROC_create_kthread(kproc_t entry_point, void *arg);
 
 // Selects the next thread to run. It must select the "thread" that called
 // PROC_run if not other threads are available to run. This function does not
