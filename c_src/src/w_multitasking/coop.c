@@ -3,6 +3,7 @@
 #include "kmalloc.h"
 #include "paging.h"
 #include "printer.h"
+#include <errno.h>
 #include <stdint.h>
 
 bool need_init = true;
@@ -33,8 +34,8 @@ Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
   Process *t = (Process *)kmalloc(sizeof(Process)).point;
 
   // allocate a new stack (kernel stack)
-  void *stack_top = (void *)(kmalloc(PAGE_SIZE * 4).point);
-  stack_top += PAGE_SIZE * 3; // WARN: suboptimal
+  void *stack_top = (void *)(kmalloc(PAGE_SIZE * 10).point);
+  stack_top += PAGE_SIZE * 10; // WARN: suboptimal
 
   // init thread context
   //    entry_point func should be called when this thread is scheduled
@@ -46,6 +47,7 @@ Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
   t->context.cs = 8;
   t->context.rflags = 0x202;
   t->context.rdi = (uint64_t)arg; // TODO: support better args
+  t->dead = false;
 
   PROC_add_to_scheduler(t);
 
@@ -53,17 +55,30 @@ Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
 };
 
 void PROC_reschedule(void) {
-
-  if (glbl_thread_current->next == NULL) {
-    ERR_LOOP();
-  } else if (glbl_thread_current->next == glbl_thread_current) {
-    tracek("YIELD - returning to yielder\n");
-    // glbl_thread_on_deck->context.cs = 8; // WARN: debug
-  } else {
-    tracek("YIELD - selecting next\n");
-    glbl_thread_on_deck = glbl_thread_current->next;
-    // glbl_thread_on_deck->context.cs = 8; // WARN: debug
-  }
+  try:
+    if (glbl_thread_current->next == NULL) {
+      ERR_LOOP();
+    } else if (glbl_thread_current->next == glbl_thread_current) {
+      // no other threads are available
+      if (glbl_thread_current->dead) {
+        tracek("YIELD - all threads dead, returning to boot_thread\n");
+        ERR_LOOP();
+      } else {
+        tracek("YIELD - returning to yielder\n");
+      }
+    } else {
+      // other threads available
+      if (((Process *)glbl_thread_current->next)->dead) {
+        // prune threads
+        tracek("YIELD - next is dead, removing and rescheduling\n");
+        glbl_thread_current->next =
+            ((Process *)glbl_thread_current->next)->next;
+        goto try;
+      } else {
+        tracek("YIELD - selecting next\n");
+        glbl_thread_on_deck = glbl_thread_current->next;
+      }
+    }
 };
 
 ISR_void syscall_handler(uint64_t syscall_num) {
@@ -71,20 +86,9 @@ ISR_void syscall_handler(uint64_t syscall_num) {
     PROC_reschedule();
   } else if (syscall_num == SYSCALL_KEXIT) {
     tracek("exiting\n");
-    ERR_LOOP();
-
-    // Process **pp = &glbl_thread_current;
-
-    // ASSERT(*pp != NULL);
-
-    // while (*pp) {
-    //   if (*pp == glbl_thread_current) {
-    //     *pp = glbl_thread_current->next;
-    //     break;
-    //   }
-    //   pp = &(*pp)->next;
-    // }
-
+    glbl_thread_current->dead = true;
+    // TODO: free stuff
+    PROC_reschedule();
   } else {
     ERR_LOOP();
   }
@@ -95,28 +99,33 @@ void yield(void) { syscall(SYSCALL_YIELD); };
 void kexit(void) { syscall(SYSCALL_KEXIT); };
 
 void inner(uint64_t arg) {
-  tracek("inner_hello\n", arg);
-  yield();
+  uint64_t counter = arg;
+  while (1) {
+    if (counter) {
+      tracek("inner_hello (%lx/%lx)\n", counter--, arg);
+      yield();
+    } else {
+      tracek("goodbye! (%lx/%lx)\n", counter, arg);
+      kexit();
+    }
+  }
 }
 
 void some_thing(void *arg) {
-  while (1) {
-    tracek("celebrate (%lx)\n", (uint64_t)arg);
-    yield();
-    inner((uint64_t)arg);
-  }
+  tracek("celebrate (%lx)\n", (uint64_t)arg);
+  // yield();
+  inner((uint64_t)arg);
 };
 
 void PROC_run(void) {
 
   boot_thread.next = &boot_thread;
 
-  PROC_create_kthread(some_thing, (void *)0x11);
-  // PROC_create_kthread(some_thing, (void *)0x22);
+  PROC_create_kthread(some_thing, (void *)5);
+  PROC_create_kthread(some_thing, (void *)2);
 
   while (1) {
-    tracek("og says hi\n");
-
-    yield();
+    tracek("og says bye\n");
+    kexit();
   }
 };

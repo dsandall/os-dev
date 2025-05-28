@@ -42,6 +42,7 @@ typedef struct {
   context_t context;
   uint64_t pid;
   void *next;
+  bool dead;
 } Process;
 
 typedef void (*kproc_t)(void *);

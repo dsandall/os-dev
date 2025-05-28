@@ -83,7 +83,7 @@ break ps2_onkeypressevent
 #break isr_wrapper_59
 #break isr_wrapper_60
 break isr_wrapper_128
-break isr_wrapper_14
+#break isr_wrapper_14
 #break pageFault_handler
 #break testKmalloc 
 #break src/kmalloc.c:197
@@ -102,6 +102,6 @@ end
 layout split
 c
 
-watch *glbl_thread_current
-watch glbl_thread_current
+#watch *glbl_thread_current
+#watch glbl_thread_current
 
