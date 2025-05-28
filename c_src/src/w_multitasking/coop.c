@@ -40,13 +40,14 @@ Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
   //    entry_point func should be called when this thread is scheduled
 
   static uint64_t current_pid = 1;
-  *t = (Process){0};
+  *t = (Process){0};          // WARN:debug
+  *(uint64_t *)stack_top = 0; // WARN:debug
   t->pid = current_pid++;
-  t->context.rip = entry_point; // TODO: add args
+  t->context.rip = entry_point;
   t->context.rsp = stack_top;
   t->context.cs = 8;
   t->context.rflags = 0x202;
-  t->context.rdi = (uint64_t)arg;
+  t->context.rdi = (uint64_t)arg; // TODO: support better args
 
   PROC_add_to_scheduler(t);
 

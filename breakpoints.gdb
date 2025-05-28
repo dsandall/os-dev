@@ -84,8 +84,6 @@ break ps2_onkeypressevent
 #break isr_wrapper_60
 break isr_wrapper_128
 break isr_wrapper_14
-break what_the_fuck_128
-break what_the_fuck_14
 #break pageFault_handler
 #break testKmalloc 
 #break src/kmalloc.c:197
@@ -96,6 +94,7 @@ break what_the_fuck_14
 
 break PROC_add_to_scheduler
 break breakpoint
+break some_thing
 
 layout split
 c
