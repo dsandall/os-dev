@@ -162,8 +162,8 @@ save_stack_to_current_thread:
 .copy_stack:
     ; copy the stack to the context struck, from gs to rflags (no rsp/ss)
     %assign z 0
-    %rep 23
-        mov rax, [r11 + 8*(z+1)] ; read stack
+    %rep 24
+        mov rax, [r11 + 8*(z)] ; read stack
         mov [rbx + 8*(24-z)], rax ; place in struct
 
         %assign i i+1
@@ -202,7 +202,7 @@ load_next_thread_to_stack:
 
     ; copy the stack to the context struck, from gs to rflags (no rsp/ss)
     %assign z 0
-    %rep 23
+    %rep 24
         mov rax, [rbx + 8*(24-z)] ; access stored
         mov [r11 + 8*(z+1)], rax ; place on stack
 

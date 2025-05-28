@@ -91,12 +91,17 @@ break isr_wrapper_14
 #break alloc_helper
 #break load_next_thread_to_stack
 
-
 break PROC_add_to_scheduler
 break breakpoint
 break some_thing
 
+define xsp
+  x/6gx $rsp
+end
+
 layout split
 c
 
+watch *glbl_thread_current
+watch glbl_thread_current
 
