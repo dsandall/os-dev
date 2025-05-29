@@ -82,7 +82,7 @@ break ps2_onkeypressevent
 #break isr_wrapper_58
 #break isr_wrapper_59
 #break isr_wrapper_60
-break isr_wrapper_128
+#break isr_wrapper_128
 #break isr_wrapper_14
 #break pageFault_handler
 #break testKmalloc
@@ -91,9 +91,9 @@ break isr_wrapper_128
 #break alloc_helper
 #break load_next_thread_to_stack
 
-break PROC_add_to_scheduler
+#break PROC_add_to_scheduler
 break breakpoint
-break some_thing
+#break some_thing
 
 define xsp
   x/6gx $rsp

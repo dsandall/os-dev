@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 bool need_init = true;
-Process boot_thread = {.context = {0}, 0, &boot_thread};
+Process boot_thread = {.context = {0}, 0, 777, &boot_thread};
 Process *glbl_thread_current = &boot_thread;
 Process *glbl_thread_on_deck = &boot_thread;
 
@@ -60,6 +60,7 @@ Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
 
   static uint64_t current_pid = 1;
   t->pid = current_pid++;
+  t->magic = 777;
   t->context.rip = entry_point;
   t->context.rsp = stack_top;
   t->context.cs = 8;

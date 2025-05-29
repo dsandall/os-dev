@@ -40,7 +40,8 @@ typedef struct {
 
 typedef struct Process {
   context_t context;
-  uint64_t pid;
+  int pid;
+  int magic;
   struct Process *next;
   bool dead;
 } Process;

@@ -1,5 +1,6 @@
 #include "tester.h"
 #include "book.h"
+#include "paging.h"
 #include "printer.h"
 #include "virtpage_alloc.h"
 #include <stdint.h>
@@ -155,14 +156,14 @@ void testKmalloc() {
 #else
   tracek("KMALLOC_STRESSTEST is enabled, starting...\n");
   // test kmalloc
-  virt_addr_t allocated_pointer = kmalloc(69);
+  virt_addr_t allocated_pointer = (virt_addr_t)kmalloc(69);
   uint64_t *someotherdata = (uint64_t *)(allocated_pointer.raw);
   *someotherdata = 0xBEEF;
   if (*someotherdata != (uint64_t)0xBEEF) {
     debugk("kmalloc not working\n");
     ERR_LOOP();
   }
-  kfree(allocated_pointer);
+  kfree(allocated_pointer.point);
 
   // test many more times
   const int num_tests = 12;
@@ -172,7 +173,7 @@ void testKmalloc() {
 #define ALLOC_DATA (i * 65) % 18
   // test kmalloc
   for (int i = 0; i < num_tests; i++) {
-    ptrs[i] = kmalloc(ALLOC_SIZE);
+    ptrs[i] = (virt_addr_t)kmalloc(ALLOC_SIZE);
   }
   for (int i = 0; i < num_tests; i++) {
     uint64_t *dat = (uint64_t *)(ptrs[i].raw);
@@ -182,7 +183,7 @@ void testKmalloc() {
     ASSERT(*(uint64_t *)(ptrs[i].raw) == ALLOC_DATA);
   }
   for (int i = 0; i < num_tests; i++) {
-    kfree(ptrs[i]);
+    kfree(ptrs[i].point);
   }
 
 #define ALLOC_SIZE_2 (i * 2048 + 1)
@@ -191,7 +192,7 @@ void testKmalloc() {
   // test large allocations
   tracek("allocating...\n");
   for (int i = 0; i < num_tests; i++) {
-    ptrs[i] = kmalloc(ALLOC_SIZE_2);
+    ptrs[i] = (virt_addr_t)kmalloc(ALLOC_SIZE_2);
   }
 
   tracek("writing...\n");
@@ -212,7 +213,7 @@ void testKmalloc() {
 
   tracek("freeing...\n");
   for (int i = 0; i < num_tests; i++) {
-    kfree(ptrs[i]);
+    kfree(ptrs[i].point);
   }
 
   tracek("KMALLOC_STRESSTEST passed\n");

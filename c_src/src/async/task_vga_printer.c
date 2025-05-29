@@ -37,11 +37,11 @@ async_run_result_t vga_task_init(void *initial_state) {
                           .fg = VGA_BLUE,
                           .bg = VGA_BLUE};
 
-  static Textbox_t main_box = {.x_corner = 8,
+  static Textbox_t main_box = {.x_corner = 2,
                                .y_corner = 2,
-                               .width = 30,
+                               .width = 56,
                                .height = 20,
-                               .cursor = (position_t){8, 2},
+                               .cursor = (position_t){2, 2},
                                .fg = VGA_WHITE,
                                .bg = VGA_DARK_GREY};
 

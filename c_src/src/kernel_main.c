@@ -13,9 +13,9 @@ void doubleprint(char c) {
   printchar_serialtask(c);
 }
 
-Textbox_t boxxy = {.x_corner = 38,
+Textbox_t boxxy = {.x_corner = 58,
                    .y_corner = 2,
-                   .width = 35,
+                   .width = 15,
                    .height = 20,
                    .cursor = (position_t){38, 2},
                    .fg = VGA_WHITE,
