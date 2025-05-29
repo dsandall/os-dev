@@ -45,10 +45,10 @@ Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
   // create new thread
 
   // TODO: allocate somewhere other than the heap region
-  Process *t = (Process *)kmalloc(sizeof(Process)).point;
+  Process *t = (Process *)kmalloc(sizeof(Process));
 
   // allocate a new stack (kernel stack)
-  void *stack_base = (void *)(kmalloc(PAGE_SIZE * 10).point);
+  void *stack_base = (void *)(kmalloc(PAGE_SIZE * 10));
   void *stack_top = stack_base + PAGE_SIZE * 10; // stack grows down
 
   // Reserve space for fake return address

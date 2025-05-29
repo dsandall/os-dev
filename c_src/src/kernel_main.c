@@ -6,13 +6,22 @@
 #include "printer.h"
 #include "rejigger_paging.h"
 #include "tasks.h"
+#include "vga_textbox.h"
 
 void doubleprint(char c) {
-#include "vga_textbox.h"
   printchar_vgatask(c);
   printchar_serialtask(c);
 }
 
+Textbox_t boxxy = {.x_corner = 38,
+                   .y_corner = 2,
+                   .width = 35,
+                   .height = 20,
+                   .cursor = (position_t){38, 2},
+                   .fg = VGA_WHITE,
+                   .bg = VGA_DARK_GREY};
+
+extern void run_snakes_wrapper(Textbox_t *boxxy);
 void kernel_main() {
 
   recreate_gdt();
@@ -28,6 +37,7 @@ void kernel_main() {
   fiftytwo_card_pickup();
   regenerate_page_tables();
 
+  run_snakes_wrapper(&boxxy);
   PROC_run();
 
   return;
