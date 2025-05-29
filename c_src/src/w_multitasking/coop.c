@@ -98,7 +98,7 @@ void PROC_reschedule(void) {
         glbl_thread_current->next = glbl_thread_current->next->next;
         goto try;
       } else {
-        tracek("YIELD - selecting next\n");
+        // tracek("YIELD - selecting next\n");
         glbl_thread_on_deck = glbl_thread_current->next;
       }
     }

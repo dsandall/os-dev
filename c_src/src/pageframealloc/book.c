@@ -96,6 +96,8 @@ phys_addr unsafe_MMU_pf_alloc(void) {
 phys_addr MMU_pf_alloc(void) {
   phys_addr p = unsafe_MMU_pf_alloc();
 
+  ASSERT(p > 0x400000000);
+
   ASSERT(p != (uint64_t)NULL);
 
   return p;

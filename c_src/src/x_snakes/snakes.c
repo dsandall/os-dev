@@ -388,7 +388,8 @@ void kill_snake() {
   endsnake = 1;
 }
 
-static int snake_delay = 10; /* default 50 msec */
+// static int snake_delay = 10; /* default 50 msec */
+static int snake_delay = 0; /* default 50 msec */
 extern unsigned int get_snake_delay() {
   /* return whatever the current delay is */
   return snake_delay;
@@ -404,8 +405,10 @@ extern void set_snake_delay(unsigned int msec) {
 static int noop_func(int i) { return i + 10; }
 
 static void delay() {
+#if 0
   for (int i = 0; i < 0xFFFFF; i++)
     noop_func(10);
+#endif
 #if 0
   /*
    * Sleep for the number of milliseconds specified by
