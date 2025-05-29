@@ -4,6 +4,7 @@
 #include "paging.h"
 #include "printer.h"
 #include <errno.h>
+#include <iso646.h>
 #include <stdint.h>
 
 bool need_init = true;
@@ -13,10 +14,23 @@ Process *glbl_thread_on_deck = &boot_thread;
 
 void PROC_add_to_scheduler(Process *t) {
   // insert in list
+
+  // if (glbl_thread_current == &boot_thread) {
+  //   tracek(
+  //       "initializing scheduler with first process, removing
+  //       boot_thread!\n");
+  //   ASSERT(glbl_thread_on_deck == &boot_thread);
+  //   glbl_thread_current = t;
+  //   glbl_thread_on_deck = t;
+  //   t->next = t;
+  //   return;
+  // }
+
   Process *list = glbl_thread_current->next;
 
   if (list == NULL) {
-    tracek("LIST is NULL!\n");
+    ERR_LOOP();
+    tracek("WARNING: LIST is NULL!\n");
     list = glbl_thread_current;
   }
 
@@ -34,8 +48,12 @@ Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
   Process *t = (Process *)kmalloc(sizeof(Process)).point;
 
   // allocate a new stack (kernel stack)
-  void *stack_top = (void *)(kmalloc(PAGE_SIZE * 10).point);
-  stack_top += PAGE_SIZE * 10; // WARN: suboptimal
+  void *stack_base = (void *)(kmalloc(PAGE_SIZE * 10).point);
+  void *stack_top = stack_base + PAGE_SIZE * 10; // stack grows down
+
+  // Reserve space for fake return address
+  stack_top -= sizeof(void *);
+  *(uint64_t *)stack_top = (uint64_t)kexit;
 
   // init thread context
   //    entry_point func should be called when this thread is scheduled
@@ -58,21 +76,25 @@ void PROC_reschedule(void) {
   try:
     if (glbl_thread_current->next == NULL) {
       ERR_LOOP();
+    } else if (glbl_thread_current->next == &boot_thread) {
+      tracek("first time returning to boot thread, remove from list\n");
+      glbl_thread_current->next = glbl_thread_current->next->next;
+      goto try;
+
     } else if (glbl_thread_current->next == glbl_thread_current) {
       // no other threads are available
       if (glbl_thread_current->dead) {
         tracek("YIELD - all threads dead, returning to boot_thread\n");
-        ERR_LOOP();
+        glbl_thread_on_deck = &boot_thread;
       } else {
         tracek("YIELD - returning to yielder\n");
       }
     } else {
       // other threads available
-      if (((Process *)glbl_thread_current->next)->dead) {
+      if (glbl_thread_current->next->dead) {
         // prune threads
         tracek("YIELD - next is dead, removing and rescheduling\n");
-        glbl_thread_current->next =
-            ((Process *)glbl_thread_current->next)->next;
+        glbl_thread_current->next = glbl_thread_current->next->next;
         goto try;
       } else {
         tracek("YIELD - selecting next\n");
@@ -96,36 +118,41 @@ ISR_void syscall_handler(uint64_t syscall_num) {
 
 void yield(void) { syscall(SYSCALL_YIELD); };
 
-void kexit(void) { syscall(SYSCALL_KEXIT); };
+__attribute__((noreturn)) void kexit(void) {
+  syscall(SYSCALL_KEXIT);
+  ERR_LOOP();
+};
 
 void inner(uint64_t arg) {
   uint64_t counter = arg;
   while (1) {
     if (counter) {
-      tracek("inner_hello (%lx/%lx)\n", counter--, arg);
+      tracek("inner_hello (%lu/%lu)\n", counter--, arg);
       yield();
     } else {
-      tracek("goodbye! (%lx/%lx)\n", counter, arg);
-      kexit();
+      tracek("goodbye! (%lu/%lu)\n", counter, arg);
+      break;
     }
   }
+  // kexit(); // implicit
 }
 
 void some_thing(void *arg) {
-  tracek("celebrate (%lx)\n", (uint64_t)arg);
+  tracek("celebrate (%lu)\n", (uint64_t)arg);
   // yield();
   inner((uint64_t)arg);
 };
 
 void PROC_run(void) {
 
-  boot_thread.next = &boot_thread;
-
   PROC_create_kthread(some_thing, (void *)5);
+  PROC_create_kthread(some_thing, (void *)3);
   PROC_create_kthread(some_thing, (void *)2);
 
-  while (1) {
-    tracek("og says bye\n");
-    kexit();
-  }
+  tracek("og says bye\n");
+
+  yield();
+
+  tracek(
+      "all threads successfully exited, and we have returned to boot thread\n");
 };

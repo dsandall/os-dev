@@ -38,10 +38,10 @@ typedef struct {
   // void *cr3; // TODO:
 } context_t;
 
-typedef struct {
+typedef struct Process {
   context_t context;
   uint64_t pid;
-  void *next;
+  struct Process *next;
   bool dead;
 } Process;
 

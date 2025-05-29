@@ -28,6 +28,10 @@ void kernel_main() {
   fiftytwo_card_pickup();
   regenerate_page_tables();
 
+  PROC_run();
+
+  return;
+
   //// initialize hardware serial
   hw_serial_init(NULL);
   debugk("single print\n");
@@ -41,9 +45,7 @@ void kernel_main() {
   spawn_task(ps2_rx_task, NULL, NULL);
   spawn_task(hw_serial_task, NULL, NULL);
 
-  // RESUME(true);
-
-  PROC_run();
+  RESUME(true);
 
   while (1) {
     run_tasks();
