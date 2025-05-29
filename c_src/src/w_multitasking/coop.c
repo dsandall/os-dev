@@ -125,15 +125,11 @@ __attribute__((noreturn)) void kexit(void) {
 
 void inner(uint64_t arg) {
   uint64_t counter = arg;
-  while (1) {
-    if (counter) {
-      tracek("inner_hello (%lu/%lu)\n", counter--, arg);
-      yield();
-    } else {
-      tracek("goodbye! (%lu/%lu)\n", counter, arg);
-      break;
-    }
+  while (counter) {
+    tracek("inner_hello (%lu/%lu)\n", counter--, arg);
+    yield();
   }
+  tracek("goodbye! (%lu/%lu)\n", counter, arg);
   // kexit(); // implicit
 }
 
@@ -145,9 +141,9 @@ void some_thing(void *arg) {
 
 void PROC_run(void) {
 
-  PROC_create_kthread(some_thing, (void *)5);
-  PROC_create_kthread(some_thing, (void *)3);
-  PROC_create_kthread(some_thing, (void *)2);
+  // PROC_create_kthread(some_thing, (void *)5);
+  // PROC_create_kthread(some_thing, (void *)3);
+  // PROC_create_kthread(some_thing, (void *)2);
 
   tracek("og says bye\n");
 

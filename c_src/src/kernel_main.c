@@ -19,7 +19,7 @@ Textbox_t boxxy = {.x_corner = 38,
                    .height = 20,
                    .cursor = (position_t){38, 2},
                    .fg = VGA_WHITE,
-                   .bg = VGA_DARK_GREY};
+                   .bg = VGA_BLACK};
 
 extern void run_snakes_wrapper(Textbox_t *boxxy);
 void kernel_main() {

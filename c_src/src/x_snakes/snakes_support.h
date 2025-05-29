@@ -62,7 +62,9 @@ void VGA_display_attr_char(int x, int y, char c, int fg, int bg) {
 void run_snakes_wrapper(Textbox_t *boxxy) {
 
   snakes_textbox = boxxy;
+  VGA_clear();
+
   curr_proc = glbl_thread_current;
 
-  setup_snakes(0);
+  setup_snakes(1);
 };
