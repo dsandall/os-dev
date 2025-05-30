@@ -135,11 +135,11 @@ __attribute__((format(printf, 1, 2))) int printk(const char *fmt, ...) {
   return ret;
 }
 
-extern void printchar_vgatask(char c);
+extern void printchar_defaultvga(char c);
 __attribute__((format(printf, 1, 2))) int tracek_helper(const char *fmt, ...) {
   va_list va;
   va_start(va, fmt);
-  int ret = vprintk_agnostic(printchar_vgatask, fmt, va);
+  int ret = vprintk_agnostic(printchar_defaultvga, fmt, va);
   va_end(va);
   return ret;
 }

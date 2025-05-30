@@ -94,7 +94,7 @@ break ps2_onkeypressevent
 #break PROC_add_to_scheduler
 break breakpoint
 #break some_thing
-
+break PROC_unblock_head
 define xsp
   x/6gx $rsp
 end
@@ -126,7 +126,7 @@ layout split
 c
 
 
-break PROC_reschedule
+#break PROC_reschedule
 #watch *scheduler_on_deck
 #watch *scheduler_current
 disp *scheduler_current

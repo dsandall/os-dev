@@ -92,5 +92,6 @@ static inline void kexit(void) {
   syscall(SYSCALL_KEXIT);
   ERR_LOOP();
 };
+ISR_void PROC_kexit_handler(void);
 
 #endif

@@ -20,7 +20,7 @@ void spawn_task(run_fn_t poll, void *state, run_fn_t init_fn) {
       init_fn(state);
 
   } else {
-    debugk("No task slots remaining\n");
+    tracek("No task slots remaining\n");
     ERR_LOOP();
   }
 }

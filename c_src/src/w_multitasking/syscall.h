@@ -4,7 +4,6 @@
 #include "freestanding.h"
 
 #define SYSCALL_PROC_BLOCK_ON 50
-
 #define SYSCALL_PROC_RUN 78
 #define SYSCALL_YIELD 77
 #define SYSCALL_KEXIT 76

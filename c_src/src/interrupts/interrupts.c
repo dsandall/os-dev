@@ -41,7 +41,7 @@ ISR_void asm_int_handler(uint16_t vector, uint32_t error,
 
 ISR_void isr_on_ps2_rx();
 void PIC_sendEOI(uint8_t irq);
-extern ISR_void isr_on_hw_serial();
+extern ISR_void serial_isr_handler();
 
 ISR_void PIC_common_handler(uint32_t vector) {
   switch (vector) {
@@ -59,8 +59,8 @@ ISR_void PIC_common_handler(uint32_t vector) {
     tracek("COM2 (IRQ3)\n");
     ERR_LOOP();
   case 0x24:
-    // tracek("COM1 (IRQ4)\n");
-    isr_on_hw_serial();
+    tracek("COM1 (IRQ4)\n");
+    serial_isr_handler();
     break;
   case 0x25:
     tracek("LPT2 / floppy (IRQ5)\n");

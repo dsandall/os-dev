@@ -77,7 +77,7 @@ pte_and_level_t walk_page_tables(virt_addr_t v, page_table_entry_t *master_l4) {
 
   if (pdpte->pse_or_pat) {
     // 1 GiB page (optional, not requested, but good to include)
-    debugk("is 1gb page\n");
+    tracek("is 1gb page\n");
     return (pte_and_level_t){pdpte, ONE_GIB};
   }
 
@@ -87,7 +87,7 @@ pte_and_level_t walk_page_tables(virt_addr_t v, page_table_entry_t *master_l4) {
 
   if (pde->pse_or_pat) {
     // 2 MiB page
-    debugk("is 2mib page\n");
+    tracek("is 2mib page\n");
     return (pte_and_level_t){pde, TWO_MEG};
   }
 
@@ -138,7 +138,7 @@ static void testAddressTranslation() {
 
   // attempt translation for identity page by walking page table
   phys_addr p = from_virtual(v);
-  debugk("regenerated page tablets\n");
+  tracek("regenerated page tablets\n");
   ASSERT(p == v.raw);
-  debugk("passed identity page translation check\n");
+  tracek("passed identity page translation check\n");
 }

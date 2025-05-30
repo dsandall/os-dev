@@ -81,7 +81,7 @@ static pte_and_level_t alloc_helper(pte_and_level_t upper_entry,
 
   if (!(ret.pte->present)) {
     // then make it present
-    debugk("allocating new l%d pagetable (l%d entry) from freelist\n", ret.lvl,
+    tracek("allocating new l%d pagetable (l%d entry) from freelist\n", ret.lvl,
            upper_entry.lvl);
     tracek("associated vaddr is %p\n", v.point);
     makePresentHelper(ret);
@@ -127,7 +127,7 @@ virt_addr_t MMU_alloc_page() {
   page_table_entry_t *pml4e = &pml4[free_vp.pml4_idx];
   if (!(pml4e->present)) {
     // then make it present
-    debugk("allocating new l3 pagetable (l4 entry) from freelist\n");
+    tracek("allocating new l3 pagetable (l4 entry) from freelist\n");
     makePresentHelper((pte_and_level_t){.pte = pml4e, .lvl = MASTER});
   }
   // ASSERT(pml4e->magic == PTE_MAGIC);
@@ -145,10 +145,10 @@ virt_addr_t MMU_alloc_page() {
   // tracek("pte.point is %p\n", pte->point);
 
   if ((pte->demanded && pte->magic == PTE_MAGIC)) {
-    debugk("attempted to allocate page that was already demanded\n");
+    tracek("attempted to allocate page that was already demanded\n");
     ERR_LOOP();
   } else if ((pte->present) && pte->magic == PTE_MAGIC) {
-    debugk("attempted to allocate page that already exists\n");
+    tracek("attempted to allocate page that already exists\n");
     ERR_LOOP();
   } else {
     // then mark it as ready to be allocated

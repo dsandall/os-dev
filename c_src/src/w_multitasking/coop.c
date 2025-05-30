@@ -13,11 +13,12 @@ SchedulerSlot boot_slot = {
 
 SchedulerSlot *scheduler_current = &boot_slot;
 SchedulerSlot *scheduler_on_deck = &boot_slot;
+ISR_void setOnDeck(SchedulerSlot *new) { scheduler_on_deck = new; };
 
 void PROC_add_to_scheduler(Process *t) {
   SchedulerSlot *new_slot = (SchedulerSlot *)kmalloc(sizeof(SchedulerSlot));
-  *new_slot = (SchedulerSlot){t, NULL, NULL};
-  insert(scheduler_current, new_slot);
+  *new_slot = (SchedulerSlot){t, new_slot, new_slot};
+  insert_end(&scheduler_current, new_slot);
 };
 
 Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
@@ -45,42 +46,41 @@ Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
   t->context.cs = 8;
   t->context.rflags = 0x202;
   t->context.rdi = (uint64_t)arg; // TODO: support better args
-  t->dead = false;
 
   PROC_add_to_scheduler(t);
 
   return t;
 };
 
-void PROC_reschedule(void) {
-  if (scheduler_current->proc->dead) {
-    SchedulerSlot *next;
-    if ((next = separate_from(scheduler_current)) != NULL) {
-      // dead and has a diff proc (remove and reschedule)
-      tracek("KEXIT - current is dead, removing and rescheduling\n");
-      scheduler_on_deck = next;
-    } else {
-      // dead and has only itself (remove and goto boot_thread)
-      tracek("YIELD - all threads dead, returning to boot_thread\n");
-      scheduler_on_deck = &boot_slot;
-    }
+ISR_void PROC_kexit_handler(void) {
+  // remove current slot from current
+  SchedulerSlot *rest = separate_from(scheduler_current);
+  if (rest == NULL) {
+    tracek("YIELD - all threads dead, returning to boot_thread\n");
+    setOnDeck(&boot_slot);
   } else {
-    if (scheduler_current->next == scheduler_current) {
-      tracek("YIELD - returning to yielder\n");
-    } else {
-      // tracek("YIELD - passing control\n");
-    }
-    scheduler_on_deck = scheduler_current->next;
+    tracek("KEXIT - current is dead, removing and rescheduling\n");
+    setOnDeck(rest);
   }
-  return;
+};
+
+ISR_void PROC_reschedule(void) {
+  if (scheduler_current->next == scheduler_current) {
+    // tracek("YIELD - returning to yielder\n");
+  } else {
+    // tracek("YIELD - passing control\n");
+  }
+  setOnDeck(scheduler_current->next);
 };
 
 ISR_void PROC_run_handler(void) {
-  tracek("PROC_RUN - removed boot thread from scheduler\n");
-  scheduler_on_deck = separate_from(&boot_slot);
-  ASSERT(scheduler_on_deck); // you probably should have other threads when
-                             // calling this
-  return;
+  setOnDeck(separate_from(&boot_slot));
+  if (scheduler_on_deck) {
+    tracek("PROC_RUN - removed boot thread from scheduler\n");
+  } else {
+    tracek("PROC_RUN - no processes available, false start\n");
+    setOnDeck(&boot_slot);
+  }
 };
 
 /////////////////////////////////////////////////
@@ -95,7 +95,7 @@ ISR_void PROC_run_handler(void) {
 void inner(uint64_t arg) {
   uint64_t counter = arg;
   while (counter) {
-    tracek("inner_hello (%lu/%lu)\n", counter--, arg);
+    // tracek("inner_hello (%lu/%lu)\n", counter--, arg);
     yield();
   }
   tracek("goodbye! (%lu/%lu)\n", counter, arg);

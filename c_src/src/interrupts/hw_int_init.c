@@ -13,10 +13,10 @@
 
 void hw_int_init() {
   init_IDT();
-  debugk("IDT initialized\n");
+  tracek("IDT initialized\n");
   do_PIC();
-  debugk("PIC initialized\n");
+  tracek("PIC initialized\n");
   PIC_set_mask(0); // disable the timer
-  debugk("masked the timer\n");
+  tracek("masked the timer\n");
   init_PS2();
 }

@@ -167,7 +167,7 @@ virt_addr_t kmalloc(size_t size) {
   virt_addr_t vret =
       (virt_addr_t){.raw = (uint64_t)ret + sizeof(struct KmallocExtra)};
 
-  tracek("handed out: %p from pool %d with requested size %lx\n", vret,
+  tracek("handed out: %p from pool %d with requested size %lu\n", vret.point,
          pool_index, size);
   return vret;
 };

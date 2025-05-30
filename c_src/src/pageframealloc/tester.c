@@ -160,8 +160,8 @@ void testKmalloc() {
   uint64_t *someotherdata = (uint64_t *)(allocated_pointer.raw);
   *someotherdata = 0xBEEF;
   if (*someotherdata != (uint64_t)0xBEEF) {
-    debugk("kmalloc not working\n");
-    ERR_LOOP();
+    tracek("kmalloc not working\n");
+    ();
   }
   kfree(allocated_pointer.point);
 
