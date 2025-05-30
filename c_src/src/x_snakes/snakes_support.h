@@ -2,7 +2,7 @@
 ////// Snakes Support
 ///////////////////////////////////////////////////////////////////////
 
-#include "coop.h"
+#include "doubly_linked.h"
 #include "kmalloc.h"
 #include "vga_textbox.h"
 #include "vgalib.h"

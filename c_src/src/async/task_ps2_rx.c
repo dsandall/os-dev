@@ -47,8 +47,7 @@ async_run_result_t ps2_rx_task(void *initial_state) {
                   // the scheduler arrives
 }
 
-// And the ISR
 ISR_void isr_on_ps2_rx() {
-  uint8_t byte = PS2_RX();
-  channel_send_uint8(&ps2_ipc, byte);
+  // And the ISR
+  channel_send_uint8(&ps2_ipc, PS2_RX());
 }

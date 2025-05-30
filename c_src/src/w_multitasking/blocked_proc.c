@@ -1,4 +1,4 @@
-#include "coop.h"
+#include "doubly_linked.h"
 
 // keyboard driver -
 // use queue to pass data from PS2 IRQ to user function that reads keyboard
@@ -22,18 +22,15 @@
 //    blocked! (ISRs, printf, etc. stuff that should always happen smoothly, and
 //    give back control)
 
-typedef struct {
-  Process *blocked_proc;
-} ProcessQueue;
 // one queue for each block event (serial response, ps2 response, disk response)
 
 // move proc to pq from scheduler
 // (beware race condition, blocking a p while it recieves an int unblock)
-void PROC_block_on(ProcessQueue *pq, int enable_ints) {};
+void PROC_block_on(SchedulerSlot *pq, int enable_ints) {};
 
 // remove 1 or more from pq
-void PROC_unblock_all(ProcessQueue *pq) {};
-void PROC_unblock_head(ProcessQueue *pq) {};
+void PROC_unblock_all(SchedulerSlot *pq) {};
+void PROC_unblock_head(SchedulerSlot *pq) {};
 
 // init pq
-void PROC_init_queue(ProcessQueue *pq) {};
+void PROC_init_queue(SchedulerSlot *pq) {};
