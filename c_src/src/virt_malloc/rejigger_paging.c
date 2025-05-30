@@ -115,7 +115,7 @@ phys_addr from_entry(pte_and_level_t res, virt_addr_t v) {
   }
 }
 
-phys_addr from_virtual(virt_addr_t v) {
+static phys_addr from_virtual(virt_addr_t v) {
 
   ASSERT(check_canonical_address(v));
 
@@ -127,7 +127,7 @@ phys_addr from_virtual(virt_addr_t v) {
   case FOUR_KAY:
     if (res.pte->present)
       return from_entry(res, v);
-    ERR_LOOP(); // you best hope its a demand page otherwise
+    ERR_LOOP();
   case TWO_MEG:
   case ONE_GIB:
   case MASTER:
@@ -135,7 +135,7 @@ phys_addr from_virtual(virt_addr_t v) {
   }
 }
 
-void testAddressTranslation() {
+static void testAddressTranslation() {
   uint32_t junk = 0;
   virt_addr_t v;
   v.raw = (uint64_t)&junk;

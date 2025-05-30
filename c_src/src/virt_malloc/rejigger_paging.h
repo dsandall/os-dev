@@ -45,7 +45,7 @@ void regenerate_page_tables();
 bool check_canonical_address(virt_addr_t v);
 
 pte_and_level_t walk_page_tables(virt_addr_t v, page_table_entry_t *master_l4);
-phys_addr from_virtual(virt_addr_t v);
+// phys_addr from_virtual(virt_addr_t v);
 phys_addr from_entry(pte_and_level_t res, virt_addr_t v);
 
 #endif // REJIGGER_PAGING_H

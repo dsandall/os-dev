@@ -1,5 +1,6 @@
 #include "book.h"
 #include "freestanding.h"
+#include "paging.h"
 #include "printer.h"
 #include "rejigger_paging.h"
 #include "virtpage_alloc.h"
@@ -157,5 +158,8 @@ virt_addr_t kmalloc(size_t size) {
 
   // return incremented address
   ASSERT(is_in_kheap((virt_addr_t){.raw = (uint64_t)ret}));
-  return (virt_addr_t){.raw = (uint64_t)ret + sizeof(struct KmallocExtra)};
+
+  virt_addr_t vret =
+      (virt_addr_t){.raw = (uint64_t)ret + sizeof(struct KmallocExtra)};
+  return vret;
 };
