@@ -63,11 +63,7 @@ bool check_canonical_address(virt_addr_t v) {
 
 pte_and_level_t walk_page_tables(virt_addr_t v, page_table_entry_t *master_l4) {
 
-  BREAK_IF(v.raw == 0x70000001e);
-
-  BREAK_IF(v.raw == 0x400000016);
-
-  BREAK_IF(v.pdpt_idx == 16);
+  // BREAK_IF(v.pdpt_idx == 16);
 
   ASSERT(check_canonical_address(v));
 

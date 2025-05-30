@@ -30,6 +30,7 @@
  */
 
 #include "snakes.h"
+#include "printer.h"
 #include "snakes_support.h"
 // #include "types.h"
 #include "kmalloc.h"
@@ -128,6 +129,7 @@ snake new_snake(int y, int x, int len, int dir, int color) {
   new->others = allsnakes;
   allsnakes = new;
 
+  tracek("newsnake is %p\n", new);
   return new;
 }
 
@@ -388,39 +390,14 @@ void kill_snake() {
   endsnake = 1;
 }
 
-// static int snake_delay = 10; /* default 50 msec */
-static int snake_delay = 0; /* default 50 msec */
-extern unsigned int get_snake_delay() {
-  /* return whatever the current delay is */
-  return snake_delay;
-}
-
-extern void set_snake_delay(unsigned int msec) {
-  /* set the snake delay between moves to the given number
-   * of milliseconds
-   */
-  snake_delay = msec;
-}
+// #define DELAY_SCALE 0xFFFFF
+#define DELAY_SCALE 0x7777
 
 static int noop_func(int i) { return i + 10; }
 
 static void delay() {
-#if 0
-  for (int i = 0; i < 0xFFFFF; i++)
+  for (int i = 0; i < DELAY_SCALE; i++)
     noop_func(10);
-#endif
-#if 0
-  /*
-   * Sleep for the number of milliseconds specified by
-   * snake_delay
-   */
-  struct timespec tv;
-  tv.tv_sec  = (snake_delay * 1000)/1000000000;
-  tv.tv_nsec = (snake_delay * 1000000)%1000000000;
-  if ( (-1 == nanosleep(&tv,NULL)) && errno != EINTR ) {
-    perror("nanosleep");
-  }
-#endif
 }
 
 snake snakeFromLWpid(int lw_pid) {

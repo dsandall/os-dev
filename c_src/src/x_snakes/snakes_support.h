@@ -8,7 +8,8 @@
 
 extern void setup_snakes(int hungry);
 extern Process *glbl_thread_current;
-Process *curr_proc;
+#define curr_proc glbl_thread_current
+
 Textbox_t *snakes_textbox; // WARN: not yet allocated
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,8 +64,6 @@ void run_snakes_wrapper(Textbox_t *boxxy) {
 
   snakes_textbox = boxxy;
   VGA_clear();
-
-  curr_proc = glbl_thread_current;
 
   setup_snakes(1);
 };

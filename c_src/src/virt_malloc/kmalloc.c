@@ -68,6 +68,8 @@ void kfree(virt_addr_t addr) {
   ASSERT(is_in_kheap(addr));
   ASSERT(has_been_demanded(addr)); // and it has been handed out
 
+  return; // WARN: not returning memory!
+
   struct KmallocExtra *header =
       (struct KmallocExtra *)(addr.raw) - (uint64_t)sizeof(struct KmallocExtra);
 
@@ -110,7 +112,7 @@ virt_addr_t kmalloc(size_t size) {
   struct KmallocExtra *ret = 0;
   size_t allocated_size;
 
-  tracek("attempting to allocate %lu bytes\n", ns);
+  // tracek("attempting to allocate %lu bytes\n", ns);
 
   if (pool_index) {
     // fits into existing pools
@@ -132,7 +134,7 @@ virt_addr_t kmalloc(size_t size) {
     ret = pop(p);
     allocated_size = p->max_size;
 
-    tracek("allocated from static pool of size %lu\n", allocated_size);
+    // tracek("allocated from static pool of size %lu\n", allocated_size);
   } else {
     // custom pool
     p = CUSTOM_POOL_MAGIC;
@@ -149,7 +151,7 @@ virt_addr_t kmalloc(size_t size) {
 
     allocated_size = necessary_pages * PAGE_SIZE;
 
-    tracek("allocated custom pool of size %lu\n", allocated_size);
+    // tracek("allocated custom pool of size %lu\n", allocated_size);
   }
 
   // place the header
@@ -161,5 +163,8 @@ virt_addr_t kmalloc(size_t size) {
 
   virt_addr_t vret =
       (virt_addr_t){.raw = (uint64_t)ret + sizeof(struct KmallocExtra)};
+
+  tracek("handed out: %p from pool %d with requested size %lx\n", vret,
+         pool_index, size);
   return vret;
 };
