@@ -2,6 +2,8 @@
 #define COOP_H
 
 #include "freestanding.h"
+#include "printer.h"
+#include "syscall.h"
 #include <stdint.h>
 
 typedef struct {
@@ -35,7 +37,7 @@ typedef struct {
     uint64_t gs;
     // (top of stack/chronologically pushed last/lowest address)
   };
-  // void *cr3; // TODO:
+  void *cr3; // TODO:
 } context_t;
 
 typedef struct Process {
@@ -50,7 +52,13 @@ typedef void (*kproc_t)(void *);
 // Called in a loop at the end of kmain. This drives the entire
 // multi-tasking system. The next thread gets selected and run. Threads can
 // yield, exit, etc. If no thread is able to run then PROC_run() returns.
-void PROC_run(void);
+static inline void PROC_run(void) {
+  syscall(SYSCALL_PROC_RUN);
+  // context switch until exit
+  tracek(
+      "all threads successfully exited, and we have returned to boot thread\n");
+};
+ISR_void PROC_run_handler(void);
 
 // Adds a new thread to the multi-tasking system. This requires allocating a new
 // stack in the virtual address space and initializing the thread's context such
@@ -72,13 +80,17 @@ void PROC_reschedule(void);
 // example implementation of yield which just triggers trap number 123 is:
 //
 // static inline void yield(void) { asm volatile("INT $123"); }
-void yield(void);
+
+static inline void yield(void) { syscall(SYSCALL_YIELD); };
 
 // Exits and destroys all the state of the thread that calls kexit. Needs to run
 // the scheduler to pick another process. I also suggest you use a trap-based
 // implementation AND the IST mechanism so that the trap handler runs on a
 // different stack. Running on a different stack makes it possible to free the
 // thread's stack without pulling the rug out from under yourself.
-void kexit(void);
+static inline void kexit(void) {
+  syscall(SYSCALL_KEXIT);
+  ERR_LOOP();
+};
 
 #endif

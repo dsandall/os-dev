@@ -49,5 +49,6 @@ async_run_result_t ps2_rx_task(void *initial_state) {
 
 ISR_void isr_on_ps2_rx() {
   // And the ISR
+  tracek(" PS2 ISR rx\n");
   channel_send_uint8(&ps2_ipc, PS2_RX());
 }

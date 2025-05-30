@@ -9,6 +9,9 @@ typedef struct SchedulerSlot {
   struct SchedulerSlot *prev;
 } SchedulerSlot;
 
+extern SchedulerSlot *scheduler_current;
+extern SchedulerSlot *scheduler_on_deck;
+
 static void insert(SchedulerSlot *list, SchedulerSlot *item) {
   ASSERT(list != NULL);
   ASSERT(item != NULL);

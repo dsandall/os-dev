@@ -15,20 +15,9 @@ SchedulerSlot *scheduler_current = &boot_slot;
 SchedulerSlot *scheduler_on_deck = &boot_slot;
 
 void PROC_add_to_scheduler(Process *t) {
-  // SchedulerSlot *list = scheduler_current->next;
-
-  // if (list == NULL) {
-  //   ERR_LOOP();
-  //   tracek("WARNING: LIST is NULL!\n");
-  // }
-
   SchedulerSlot *new_slot = (SchedulerSlot *)kmalloc(sizeof(SchedulerSlot));
   *new_slot = (SchedulerSlot){t, NULL, NULL};
   insert(scheduler_current, new_slot);
-  //*new_slot = (SchedulerSlot){.proc = t, .next = list};
-  // scheduler_current->next = new_slot;
-
-  // ASSERT(new_slot->next);
 };
 
 Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
@@ -86,44 +75,20 @@ void PROC_reschedule(void) {
   return;
 };
 
-ISR_void syscall_handler(uint64_t syscall_num) {
-  if (syscall_num == SYSCALL_YIELD) {
-    PROC_reschedule();
-  } else if (syscall_num == SYSCALL_PROC_RUN) {
-
-    SchedulerSlot *rest = separate_from(&boot_slot);
-    ASSERT(rest);
-    scheduler_on_deck = rest;
-    tracek("PROC_RUN - removed boot thread from scheduler\n");
-
-  } else if (syscall_num == SYSCALL_KEXIT) {
-    tracek("exiting\n");
-    breakpoint();
-    scheduler_current->proc->dead = true;
-    // TODO: free stuff
-    PROC_reschedule();
-  } else {
-    ERR_LOOP();
-  }
+ISR_void PROC_run_handler(void) {
+  tracek("PROC_RUN - removed boot thread from scheduler\n");
+  scheduler_on_deck = separate_from(&boot_slot);
+  ASSERT(scheduler_on_deck); // you probably should have other threads when
+                             // calling this
+  return;
 };
 
-void yield(void) { syscall(SYSCALL_YIELD); };
-
-void kexit(void) {
-  tracek("setting up exit for tid %d, slot %p\n", scheduler_current->proc->tid,
-         scheduler_current);
-  syscall(SYSCALL_KEXIT);
-  ERR_LOOP();
-};
-
-void PROC_run(void) {
-  tracek("og says bye\n");
-  syscall(SYSCALL_PROC_RUN);
-
-  tracek(
-      "all threads successfully exited, and we have returned to boot thread\n");
-};
-
+/////////////////////////////////////////////////
+/////////////////////////////////////////////////
+/////////////////////////////////////////////////
+/////////////////////////////////////////////////
+/////////////////////////////////////////////////
+/////////////////////////////////////////////////
 // PROC_create_kthread(some_thing, (void *)5);
 // PROC_create_kthread(some_thing, (void *)3);
 // PROC_create_kthread(some_thing, (void *)2);

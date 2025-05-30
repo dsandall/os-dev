@@ -1,4 +1,5 @@
 #include "doubly_linked.h"
+#include "freestanding.h"
 
 // keyboard driver -
 // use queue to pass data from PS2 IRQ to user function that reads keyboard
@@ -26,7 +27,14 @@
 
 // move proc to pq from scheduler
 // (beware race condition, blocking a p while it recieves an int unblock)
-void PROC_block_on(SchedulerSlot *pq, int enable_ints) {};
+
+// NOTE: this could also be a macro, where the caller passes in a boolean
+// condition to be checked
+ISR_void PROC_block_on_handler(SchedulerSlot *block_group, int enable_ints) {
+  SchedulerSlot *rest = separate_from(scheduler_current);
+  insert(block_group, scheduler_current);
+  scheduler_on_deck = rest;
+};
 
 // remove 1 or more from pq
 void PROC_unblock_all(SchedulerSlot *pq) {};
