@@ -99,10 +99,36 @@ define xsp
   x/6gx $rsp
 end
 
-break kfree
+define wl
+  set $ptr = $arg0
+  if ($ptr == 0)
+    printf "Empty list.\n"
+  else
+    while (1)
+      p *$ptr
+      set $ptr = $ptr->next
+      if ($ptr == $arg0)
+        break
+      end
+    end
+  end
+end
+
+define sd
+  wl scheduler_on_deck
+end
+define sc
+  wl scheduler_current
+end
+
+#break kfree
 layout split
 c
 
-#watch *glbl_thread_current
-#watch glbl_thread_current
 
+break PROC_reschedule
+#watch *scheduler_on_deck
+#watch *scheduler_current
+disp *scheduler_current
+disp *scheduler_current.proc
+disp *scheduler_current.next.proc

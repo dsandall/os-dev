@@ -8,12 +8,14 @@
 #include "tasks.h"
 #include "vga_textbox.h"
 
+extern void hw_int_init();
+extern void run_snakes_wrapper();
+
 void doubleprint(char c) {
   printchar_vgatask(c);
   printchar_serialtask(c);
 }
 
-extern void run_snakes_wrapper();
 void kernel_main() {
 
   recreate_gdt();
@@ -23,7 +25,7 @@ void kernel_main() {
   tracek("printing some stuff on vga\n");
 
   // hw interrupts, so we can interact  I/O and handle exceptions
-  hw_int_task_init(NULL);
+  hw_int_init();
 
   // generate free memory list
   fiftytwo_card_pickup();

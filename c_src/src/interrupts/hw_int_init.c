@@ -11,10 +11,7 @@
 // Allocating for the task (should only be spawned once):
 // - 1 channel (from PS2_rx -> this task, the vga buffer)
 
-async_run_result_t hw_int_task(void *initial_state) { return DEAD; }
-
-async_run_result_t hw_int_task_init(void *initial_state) {
-
+void hw_int_init() {
   init_IDT();
   debugk("IDT initialized\n");
   do_PIC();
@@ -22,5 +19,4 @@ async_run_result_t hw_int_task_init(void *initial_state) {
   PIC_set_mask(0); // disable the timer
   debugk("masked the timer\n");
   init_PS2();
-  return PENDING;
 }

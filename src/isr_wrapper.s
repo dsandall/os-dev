@@ -4,8 +4,8 @@
 extern asm_int_handler
 extern boot_thread
 extern need_init 
-extern glbl_thread_current
-extern glbl_thread_on_deck
+extern scheduler_current
+extern scheduler_on_deck
 
 section .text
 bits 64
@@ -64,9 +64,10 @@ isr_wrapper_%1:
     mov r11, rsp
     call try_init
 
-    ; check if context switch is needed
-    mov rax, [glbl_thread_current]
-    mov rbx, [glbl_thread_on_deck]
+    ; check if context switch is needed by comparing the slots // WARN: compare the process, or the slots???
+    mov rax, [scheduler_current]
+    mov rbx, [scheduler_on_deck]
+
     cmp rax, rbx
     je return_no_context_switch
     ; else...
@@ -79,9 +80,9 @@ isr_wrapper_%1:
 
     add rsp, 16
  
-    ; record the switch
-    mov rax, [glbl_thread_on_deck]
-    mov [glbl_thread_current], rax
+    ; switch the slots
+    mov rax, [scheduler_on_deck]
+    mov [scheduler_current], rax
     ; proceed to next thread
     jmp return_yes_context_switch
 %endmacro
@@ -156,8 +157,8 @@ return_yes_context_switch:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 save_stack_to_current_thread:
 
-    mov rbx, [glbl_thread_current] ; reg <-(pointer) [label]
-    ;add rbx, 8          ; reg <-(pointer.context)[pointer + 8]
+    mov rbx, [scheduler_current] ; reg <-(pointer) [label]
+    mov rbx, [rbx]
 
 .copy_stack:
     ; copy the stack to the context struck, from gs to rflags (no rsp/ss)
@@ -196,9 +197,8 @@ save_stack_to_current_thread:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 load_next_thread_to_stack:
     ; rbx = &glbl_thread_next->context WARN:
-    
-    mov rbx, [glbl_thread_on_deck]
-    ;add rbx, 8
+    mov rbx, [scheduler_on_deck]
+    mov rbx, [rbx]
 
     ; copy the stack to the context struck, from gs to rflags (no rsp/ss)
     %assign z 0

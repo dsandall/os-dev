@@ -8,9 +8,12 @@
 #include <stdint.h>
 
 bool need_init = true;
-Process boot_thread = {.context = {0}, 0, 777, &boot_thread};
-Process *glbl_thread_current = &boot_thread;
-Process *glbl_thread_on_deck = &boot_thread;
+
+Process boot_thread = {.context = {0}, 0, false};
+SchedulerSlot boot_slot = {&boot_thread, &boot_slot};
+
+SchedulerSlot *scheduler_current = &boot_slot;
+SchedulerSlot *scheduler_on_deck = &boot_slot;
 
 void PROC_add_to_scheduler(Process *t) {
   // insert in list
@@ -26,19 +29,18 @@ void PROC_add_to_scheduler(Process *t) {
   //   return;
   // }
 
-  Process *list = glbl_thread_current->next;
+  SchedulerSlot *list = scheduler_current->next;
 
   if (list == NULL) {
     ERR_LOOP();
     tracek("WARNING: LIST is NULL!\n");
-    list = glbl_thread_current;
   }
 
-  glbl_thread_current->next = t;
-  ASSERT(t);
+  SchedulerSlot *new_slot = (SchedulerSlot *)kmalloc(sizeof(SchedulerSlot));
+  *new_slot = (SchedulerSlot){.proc = t, .next = list};
+  scheduler_current->next = new_slot;
 
-  t->next = list;
-  ASSERT(t->next);
+  ASSERT(new_slot->next);
 };
 
 Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
@@ -58,9 +60,9 @@ Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
   // init thread context
   //    entry_point func should be called when this thread is scheduled
 
-  static uint64_t current_pid = 1;
-  t->pid = current_pid++;
-  t->magic = 777;
+  static int current_pid = 1;
+  t->pid = current_pid;
+  t->mypid = current_pid++;
   t->context.rip = entry_point;
   t->context.rsp = stack_top;
   t->context.cs = 8;
@@ -75,33 +77,40 @@ Process *PROC_create_kthread(kproc_t entry_point, void *arg) {
 
 void PROC_reschedule(void) {
   try:
-    if (glbl_thread_current->next == NULL) {
-      ERR_LOOP();
-    } else if (glbl_thread_current->next == &boot_thread) {
-      tracek("first time returning to boot thread, remove from list\n");
-      glbl_thread_current->next = glbl_thread_current->next->next;
-      goto try;
+    asm("nop");
 
-    } else if (glbl_thread_current->next == glbl_thread_current) {
-      // no other threads are available
-      if (glbl_thread_current->dead) {
-        tracek("YIELD - all threads dead, returning to boot_thread\n");
-        glbl_thread_on_deck = &boot_thread;
-      } else {
-        tracek("YIELD - returning to yielder\n");
-      }
+  ASSERT(scheduler_current->next != NULL);
+
+  if (scheduler_current->next == &boot_slot) {
+    tracek("first time returning to boot thread, remove from list\n");
+    scheduler_current->next = scheduler_current->next->next;
+
+    // could handle this differently, but is a weird edge case
+    ASSERT(scheduler_current->next != &boot_slot);
+    goto try;
+
+  } else if (scheduler_current->next == scheduler_current) {
+    // no other threads are available
+    if (scheduler_current->proc->dead) {
+      tracek("YIELD - all threads dead, returning to boot_thread\n");
+      scheduler_on_deck = &boot_slot;
+      return;
     } else {
-      // other threads available
-      if (glbl_thread_current->next->dead) {
-        // prune threads
-        tracek("YIELD - next is dead, removing and rescheduling\n");
-        glbl_thread_current->next = glbl_thread_current->next->next;
-        goto try;
-      } else {
-        // tracek("YIELD - selecting next\n");
-        glbl_thread_on_deck = glbl_thread_current->next;
-      }
+      tracek("YIELD - returning to yielder\n");
+      return;
     }
+  } else {
+    // other threads available
+    if (scheduler_current->next->proc->dead) {
+      // prune threads
+      tracek("YIELD - next is dead, removing and rescheduling\n");
+      scheduler_current->next = scheduler_current->next->next;
+      goto try;
+    } else {
+      tracek("YIELD - selecting next\n");
+      scheduler_on_deck = scheduler_current->next;
+    }
+  }
 };
 
 ISR_void syscall_handler(uint64_t syscall_num) {
@@ -109,7 +118,8 @@ ISR_void syscall_handler(uint64_t syscall_num) {
     PROC_reschedule();
   } else if (syscall_num == SYSCALL_KEXIT) {
     tracek("exiting\n");
-    glbl_thread_current->dead = true;
+    breakpoint();
+    scheduler_current->proc->dead = true;
     // TODO: free stuff
     PROC_reschedule();
   } else {
@@ -120,6 +130,8 @@ ISR_void syscall_handler(uint64_t syscall_num) {
 void yield(void) { syscall(SYSCALL_YIELD); };
 
 __attribute__((noreturn)) void kexit(void) {
+  tracek("setting up exit for pid %d, slot %p\n",
+         scheduler_current->proc->mypid, scheduler_current);
   syscall(SYSCALL_KEXIT);
   ERR_LOOP();
 };

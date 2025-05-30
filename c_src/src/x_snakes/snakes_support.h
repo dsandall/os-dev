@@ -7,12 +7,12 @@
 #include "vga_textbox.h"
 #include "vgalib.h"
 
-#define DELAY_SCALE 0xFFFFF
-// #define DELAY_SCALE 0x7777
+// #define DELAY_SCALE 0xFFFFF
+#define DELAY_SCALE 0x7777
 
 extern void setup_snakes(int hungry);
-extern Process *glbl_thread_current;
-#define curr_proc glbl_thread_current
+extern SchedulerSlot *scheduler_current;
+#define curr_proc (scheduler_current->proc)
 
 Textbox_t *snakes_textbox; // WARN: not yet allocated
 

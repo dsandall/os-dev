@@ -41,10 +41,14 @@ typedef struct {
 typedef struct Process {
   context_t context;
   int pid;
-  int magic;
-  struct Process *next;
+  int mypid;
   bool dead;
 } Process;
+
+typedef struct SchedulerSlot {
+  Process *proc; // warn: must be first
+  struct SchedulerSlot *next;
+} SchedulerSlot;
 
 typedef void (*kproc_t)(void *);
 
