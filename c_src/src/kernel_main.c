@@ -13,15 +13,7 @@ void doubleprint(char c) {
   printchar_serialtask(c);
 }
 
-Textbox_t boxxy = {.x_corner = 58,
-                   .y_corner = 2,
-                   .width = 15,
-                   .height = 20,
-                   .cursor = (position_t){38, 2},
-                   .fg = VGA_WHITE,
-                   .bg = VGA_BLACK};
-
-extern void run_snakes_wrapper(Textbox_t *boxxy);
+extern void run_snakes_wrapper();
 void kernel_main() {
 
   recreate_gdt();
@@ -37,9 +29,8 @@ void kernel_main() {
   fiftytwo_card_pickup();
   regenerate_page_tables();
 
-  run_snakes_wrapper(&boxxy);
+  run_snakes_wrapper();
   PROC_run();
-  tracek("continueinggieanstirdean\n");
 
   //// initialize hardware serial
   hw_serial_init(NULL);

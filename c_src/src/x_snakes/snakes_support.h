@@ -3,8 +3,12 @@
 ///////////////////////////////////////////////////////////////////////
 
 #include "coop.h"
+#include "kmalloc.h"
 #include "vga_textbox.h"
 #include "vgalib.h"
+
+#define DELAY_SCALE 0xFFFFF
+// #define DELAY_SCALE 0x7777
 
 extern void setup_snakes(int hungry);
 extern Process *glbl_thread_current;
@@ -42,7 +46,6 @@ extern void clear_Textbox(Textbox_t *box);
 void VGA_clear(void) { clear_Textbox(snakes_textbox); };
 
 extern position_t VGA_cursor;
-extern vga_char_t *VGA_ptr();
 void VGA_display_attr_char(int x, int y, char c, int fg, int bg) {
   VGA_cursor.x = snakes_textbox->x_corner + x;
   ASSERT(x < snakes_textbox->width);
@@ -60,7 +63,16 @@ void VGA_display_attr_char(int x, int y, char c, int fg, int bg) {
 //
 //
 
-void run_snakes_wrapper(Textbox_t *boxxy) {
+void run_snakes_wrapper() {
+  Textbox_t *boxxy = (Textbox_t *)kmalloc(sizeof(Textbox_t));
+
+  *boxxy = (Textbox_t){.x_corner = 58,
+                       .y_corner = 2,
+                       .width = 15,
+                       .height = 20,
+                       .cursor = (position_t){38, 2},
+                       .fg = VGA_WHITE,
+                       .bg = VGA_BLACK};
 
   snakes_textbox = boxxy;
   VGA_clear();

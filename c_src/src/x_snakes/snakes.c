@@ -30,13 +30,9 @@
  */
 
 #include "snakes.h"
+#include "kmalloc.h"
 #include "printer.h"
 #include "snakes_support.h"
-// #include "types.h"
-#include "kmalloc.h"
-// #include "vga_console.h"
-// #include "asm.h"
-// #include "proc.h"
 
 #define SN_LENGTH 10
 #define SN_BODY_CHAR '*'
@@ -389,9 +385,6 @@ void kill_snake() {
    */
   endsnake = 1;
 }
-
-// #define DELAY_SCALE 0xFFFFF
-#define DELAY_SCALE 0x7777
 
 static int noop_func(int i) { return i + 10; }
 
