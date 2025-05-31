@@ -8,6 +8,7 @@
 #include "rejigger_paging.h"
 #include "tasks.h"
 #include "vga_textbox.h"
+#include "vgalib.h"
 
 extern void some_thing();
 extern void hw_int_init();
@@ -48,7 +49,7 @@ void vga_init() {
                           .width = VGA_WIDTH,
                           .height = 2,
                           .cursor = (position_t){0, VGA_HEIGHT - 3},
-                          .fg = VGA_BLUE,
+                          .fg = VGA_WHITE,
                           .bg = VGA_BLUE};
 
   static Textbox_t main_box = {.x_corner = 2,
@@ -85,11 +86,6 @@ void kernel_main() {
   // generate free memory list
   fiftytwo_card_pickup();
   regenerate_page_tables();
-  // PROC_create_kthread(some_thing, (void *)1);
-  // PROC_create_kthread(some_thing, (void *)2);
-  // PROC_create_kthread(some_thing, (void *)3);
-  // PROC_create_kthread(some_thing, (void *)4);
-  // PROC_create_kthread(some_thing, (void *)5);
   //  run_snakes_wrapper();
   // PROC_run();
 

@@ -36,9 +36,11 @@
 extern SchedulerSlot *keyboard_block_group;
 
 ISR_void PROC_block_on_handler(SchedulerSlot **block_group, int enable_ints) {
+
   SchedulerSlot *rest = separate_from(scheduler_current);
   insert_end(block_group, scheduler_current);
   setOnDeck(rest);
+  tracek("unblocking to %p\n", rest);
 };
 
 // remove 1 or more from pq
@@ -78,35 +80,10 @@ extern ipc_channel_uint16_t serial_ipc;
 
 extern void print_char_tobox_immediate(char c, Textbox_t *box);
 void ps2_rx_task(Textbox_t *blue_bar) {
-
-  uint8_t out_byte;
-  bool int_state;
   while (1) {
 
-    // WARN: race conditions
-    tracek("ps2 blocking\n");
-    breakpoint();
-    syscall(SYSCALL_PROC_BLOCK_ON);
-    tracek("ps2 unblocked\n");
-
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-    print_char_tobox_immediate('k', blue_bar);
-
-    int_state = PAUSE_INT();
-
-    if (channel_recv_uint8(&ps2_ipc, &out_byte)) {
+    uint8_t out_byte;
+    while (channel_recv_uint8(&ps2_ipc, &out_byte)) {
       // tracek("rx - %d\n", out_byte);
       // potentially rx from state machine
       keyout_result_t nextchar = ps2_state_machine_driver(out_byte);
@@ -115,16 +92,21 @@ void ps2_rx_task(Textbox_t *blue_bar) {
       switch (nextchar.result) {
       case DATA:
         print_char_tobox_immediate(k, blue_bar);
-        channel_send_uint16(&serial_ipc, k);
+        // channel_send_uint16(&serial_ipc, k);
         break;
       case PENDING:
       case DEAD:
         break;
       }
-    } else {
-      tracek("PRINTER CALLED WITH NONE\n");
     }
 
+    // WARN: race conditions
+    tracek("ps2 blocking\n");
+    breakpoint();
+    bool int_state = PAUSE_INT();
+
+    syscall(SYSCALL_PROC_BLOCK_ON);
+    tracek("ps2 unblocked\n");
     RESUME(int_state);
   }
 }
@@ -133,5 +115,7 @@ ISR_void isr_on_ps2_rx() {
   // And the ISR
   // tracek("PS2 ISR rx\n");
   channel_send_uint8(&ps2_ipc, PS2_RX());
-  PROC_unblock_head(&keyboard_block_group);
+  breakpoint();
+  if (keyboard_block_group)
+    PROC_unblock_head(&keyboard_block_group);
 }

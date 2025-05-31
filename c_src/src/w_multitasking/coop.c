@@ -13,7 +13,10 @@ SchedulerSlot boot_slot = {
 
 SchedulerSlot *scheduler_current = &boot_slot;
 SchedulerSlot *scheduler_on_deck = &boot_slot;
-ISR_void setOnDeck(SchedulerSlot *new) { scheduler_on_deck = new; };
+ISR_void setOnDeck(SchedulerSlot *new) {
+  ASSERT(new);
+  scheduler_on_deck = new;
+};
 
 void PROC_add_to_scheduler(Process *t) {
   SchedulerSlot *new_slot = (SchedulerSlot *)kmalloc(sizeof(SchedulerSlot));
