@@ -7,8 +7,8 @@
 #include "vga_textbox.h"
 #include "vgalib.h"
 
-// #define DELAY_SCALE 0xFFFFF
-#define DELAY_SCALE 0x7777
+#define DELAY_SCALE 0xFFFFF
+// #define DELAY_SCALE 0x7777
 
 extern void setup_snakes(int hungry);
 extern SchedulerSlot *scheduler_current;

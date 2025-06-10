@@ -40,7 +40,6 @@ void SER_init(ipc_channel_uint16_t *input_channel) {
   // Enable THRE and Line interrupts
   outb(COM1_BASE + REG_IER, 0x03);
 
-  breakpoint();
   static char str[] = "Hello from serial!";
   for (int i = 0; i < (int)strlen(str); i++) {
     channel_send_uint16(input_channel, str[i]);

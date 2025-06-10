@@ -62,13 +62,6 @@
 ////////////////////////////////////////
 ////////////////////////////////////////
 
-#define UINT8_CHANNEL_SIZE 16
-#define UINT16_CHANNEL_SIZE 32
-
-// defining  the ipc_channels
-DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint8, uint8_t, UINT8_CHANNEL_SIZE);
-DEFINE_IPC_CHANNEL_TYPE(ipc_channel_uint16, uint16_t, UINT16_CHANNEL_SIZE);
-
 /// the funcs
 DEFINE_CHANNEL_FUNCS(uint8);
 DEFINE_CHANNEL_FUNCS(uint16);

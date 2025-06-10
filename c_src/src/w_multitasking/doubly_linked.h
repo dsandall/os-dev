@@ -18,7 +18,7 @@ static void insert_end(SchedulerSlot **ptr_to_list, SchedulerSlot *item) {
   ASSERT(item != NULL);
   ASSERT(item->next == item && item->prev == item); // not already in a list
 
-  breakpoint();
+  // breakpoint();
   SchedulerSlot *list = *ptr_to_list;
   if (list == NULL) {
     // item is now the only element in the list

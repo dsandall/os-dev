@@ -29,7 +29,7 @@ void proc_dummy() {
   while (1) {
     serial_try_send(); // WARN : should only be needed if it gets lost...
     yield();
-    breakpoint();
+    // breakpoint();
   }
 }
 
@@ -86,7 +86,7 @@ void kernel_main() {
   // generate free memory list
   fiftytwo_card_pickup();
   regenerate_page_tables();
-  //  run_snakes_wrapper();
+  // run_snakes_wrapper();
   // PROC_run();
 
   //// initialize hardware serial
