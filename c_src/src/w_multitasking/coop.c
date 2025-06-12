@@ -62,6 +62,7 @@ ISR_void PROC_kexit_handler(void) {
     tracek("YIELD - all threads dead, returning to boot_thread\n");
     setOnDeck(&boot_slot);
   } else {
+    breakpoint();
     tracek("KEXIT - current is dead, removing and rescheduling\n");
     setOnDeck(rest);
   }

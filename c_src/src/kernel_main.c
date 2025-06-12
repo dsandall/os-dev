@@ -10,7 +10,6 @@
 #include "vga_textbox.h"
 #include "vgalib.h"
 
-extern void some_thing();
 extern void hw_int_init();
 extern void run_snakes_wrapper();
 extern void ps2_rx_task(Textbox_t *);
@@ -86,30 +85,19 @@ void kernel_main() {
   // generate free memory list
   fiftytwo_card_pickup();
   regenerate_page_tables();
-  // run_snakes_wrapper();
   // PROC_run();
 
   //// initialize hardware serial
   hw_serial_init(NULL);
-  // debugk("single print\n");
-
-  // setup double printing
-  // setPrinter(doubleprint);
-  // debugk("doubleprint\n");
-
-  // Prepare to enter the matrix (by that I mean the async polling system)
-  // spawn_task(vga_task, NULL, NULL);
-  // spawn_task(ps2_rx_task, NULL, NULL);
-  // spawn_task(hw_serial_task, NULL, NULL);
 
   // PROC_create_kthread(proc_dummy, NULL);
   RESUME(true);
 
+  run_snakes_wrapper();
   PROC_create_kthread((kproc_t)ps2_rx_task, blue_bar);
-  PROC_create_kthread(some_thing, (void *)1);
   PROC_run();
 
   while (1) {
-    // run_tasks();
+    tracek("do none\n");
   }
 }

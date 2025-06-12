@@ -98,6 +98,8 @@ void ps2_rx_task(Textbox_t *blue_bar) {
       case DEAD:
         break;
       }
+
+      break; // WARN: only ever recieve one byte at a time, for debug
     }
 
     // WARN: race conditions
@@ -114,8 +116,9 @@ void ps2_rx_task(Textbox_t *blue_bar) {
 ISR_void isr_on_ps2_rx() {
   // And the ISR
   // tracek("PS2 ISR rx\n");
-  channel_send_uint8(&ps2_ipc, PS2_RX());
   breakpoint();
-  if (keyboard_block_group)
+  if (keyboard_block_group) {
+    channel_send_uint8(&ps2_ipc, PS2_RX());
     PROC_unblock_head(&keyboard_block_group);
+  }
 }
